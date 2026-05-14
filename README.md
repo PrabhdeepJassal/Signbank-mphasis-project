@@ -11,12 +11,15 @@ A gesture-driven smart interaction platform. Users control banking operations th
 
 ## Quick Start (5 minutes)
 
+**Prerequisites:** Node.js >= 18, Java 21 JDK, PostgreSQL 16 running locally.
+
 ```bash
 # 1. Clone & enter project
 git clone <repo-url> && cd Sign-Bank-Enterprise-mphasis-main
 
-# 2. Start PostgreSQL
-docker compose up -d postgres
+# 2. Create database
+createdb signbank_db
+# Or via psql: CREATE DATABASE signbank_db;
 
 # 3. Install frontend deps
 cd frontend && npm install && cd ..
@@ -69,11 +72,9 @@ Open **http://localhost:5173** in a browser with a webcam.
 │   ├── src/main/resources/
 │   │   ├── application.properties
 │   │   └── db/postgres/         # schema.sql + data.sql
-│   ├── Dockerfile
 │   ├── pom.xml
 │   └── mvnw                     # Maven wrapper
 │
-├── docker-compose.yml           # PostgreSQL + Backend
 ├── setup.sh                     # One-command bootstrap
 └── README.md
 ```
@@ -86,7 +87,7 @@ Open **http://localhost:5173** in a browser with a webcam.
 |------------|-----------|----------------------|
 | Node.js    | >= 18     | `node --version`     |
 | Java       | 21 (JDK)  | `java --version`     |
-| Docker     | Latest    | `docker --version`   |
+| PostgreSQL | 16        | `psql --version`     |
 | npm        | >= 9      | `npm --version`      |
 
 > **No Maven install needed** — the project ships with the Maven wrapper (`mvnw`).
@@ -97,41 +98,37 @@ Open **http://localhost:5173** in a browser with a webcam.
 
 ### Option A: Local Development (recommended)
 
+**1. Database** — Ensure PostgreSQL 16 is running and create the database:
+
 ```bash
-# 1. Environment variables (optional — defaults work out of the box)
-cp .env.example .env
+createdb signbank_db
+# Or: psql -c "CREATE DATABASE signbank_db;"
+```
 
-# 2. Start PostgreSQL
-docker compose up -d postgres
-
-# 3. Backend
+**2. Backend:**
+```bash
 cd backend
-./mvnw clean package -DskipTests
+cp src/main/resources/application.properties src/main/resources/application-local.properties
+# Edit application-local.properties if your DB credentials differ
 ./mvnw spring-boot:run
 # Runs on http://localhost:8080
+```
 
-# 4. Frontend (new terminal)
+**3. Frontend** (new terminal):
+```bash
 cd frontend
 npm install
 npm run dev
 # Runs on http://localhost:5173
 ```
 
-### Option B: Docker Compose (everything in containers)
-
-```bash
-docker compose up --build
-```
-
-This starts PostgreSQL + the Spring Boot backend. The frontend still needs to run locally (or serve the `dist/` build via Nginx).
-
-### Option C: Automated Script
+### Option B: Automated Script
 
 ```bash
 bash setup.sh
 ```
 
-This checks prerequisites, starts PostgreSQL, installs deps, builds the backend, and prints instructions.
+This checks prerequisites, installs deps, builds the backend, and prints instructions.
 
 ---
 
@@ -255,11 +252,7 @@ cd backend
 java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
 ```
 
-### Docker
 
-```bash
-docker compose up --build
-```
 
 ---
 
