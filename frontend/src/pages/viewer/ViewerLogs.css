@@ -1,12 +1,8 @@
 .viewer-logs-layout { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
 .logs-content { flex: 1; min-width: 280px; }
 .logs-table { width: 100%; border-collapse: collapse; }
-.logs-table th { padding: 12px 16px; text-align: left; font-size: 0.7rem; font-weight: 700; color: var(--brand); background: #faf5ff; border-bottom: 2px solid #ede9fe; text-transform: uppercase; letter-spacing: 0.5px; }
-.logs-table td { padding: 12px 16px; font-size: 0.82rem; color: var(--lt-text); border-bottom: 1px solid #f1f5f9; }
-.logs-table tr:last-child td { border-bottom: none; }
-.logs-table tr:hover td { background: #faf5ff; }
-.empty-row { text-align: center; color: #94a3b8; padding: 2rem !important; font-size: 0.85rem; }
-.table-card { background: #fff; border-radius: var(--r-lg); box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid var(--lt-border); }
-.status-badge { padding: 3px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
-.status-badge.success { background: #dcfce7; color: var(--accent-dark); }
-.status-badge.failed { background: #fee2e2; color: #dc2626; }
+.logs-table th { padding: 11px 16px; text-align: left; font-size: .7rem; font-weight: 700; color: var(--text-secondary); background: var(--bg); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .4px; }
+.logs-table td { padding: 11px 16px; font-size: .82rem; color: var(--text); border-bottom: 1px solid var(--border-light); }
+.logs-table tr:hover td { background: var(--surface-hover); }
+.empty-row { text-align: center; color: var(--text-muted) !important; padding: 2rem !important; }
+.table-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }

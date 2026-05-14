@@ -1,59 +1,23 @@
 .gesture-camera {
   display: flex; flex-direction: column; gap: 10px;
-  background: #fff; border-radius: var(--r-lg);
-  padding: 18px; width: 320px; flex-shrink: 0;
-  box-shadow: 0 4px 24px rgba(124,58,237,.08);
-  border: 1px solid rgba(124,58,237,.08);
+  width: 320px; flex-shrink: 0;
+  padding: 18px; border-radius: var(--radius-lg);
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(79,70,229,.06);
 }
-.camera-header {
-  display: flex; justify-content: space-between; align-items: center;
-}
-.camera-title {
-  font-size: 0.75rem; font-weight: 700; color: var(--lt-text);
-  text-transform: uppercase; letter-spacing: 0.5px;
-}
-.status-dot {
-  font-size: 0.65rem; font-weight: 600; padding: 3px 10px; border-radius: 20px;
-}
-.status-dot.active  { background: #dcfce7; color: var(--accent); }
-.status-dot.loading { background: #f1f5f9; color: #94a3b8; }
-
-.camera-feed {
-  position: relative; border-radius: var(--r-md); overflow: hidden;
-  background: #0f172a; width: 100%; aspect-ratio: 4 / 3;
-}
-.camera-video {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  object-fit: cover; opacity: 0;
-}
-.camera-canvas {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  transform: scaleX(-1); border-radius: var(--r-md);
-}
-.slider-hint-badge {
-  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-  background: rgba(124,58,237,.82); color: #fff;
-  font-size: 0.7rem; font-weight: 700; padding: 5px 16px;
-  border-radius: 20px; white-space: nowrap;
-  backdrop-filter: blur(4px); pointer-events: none;
-  animation: badge-pulse 2s ease-in-out infinite;
-}
-@keyframes badge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-.camera-prompt { font-size: 0.75rem; color: var(--lt-muted); text-align: center; }
-.ai-status { font-size: 0.7rem; color: #94a3b8; text-align: center; }
-.ai-status .ready     { color: var(--accent); font-weight: 600; }
-.ai-status .not-ready { color: #94a3b8; }
-.detected-gesture     { color: var(--brand); font-weight: 600; }
-
-.gesture-camera.dark-theme {
-  background: #1e293b; border-color: #334155; box-shadow: 0 4px 24px rgba(0,0,0,.3);
-}
-.gesture-camera.dark-theme .camera-title { color: #f8fafc; }
-
-.modal-camera-wrap .gesture-camera,
-.logout-confirm-right .gesture-camera,
-.block-auth-left .gesture-camera,
-.replace-modal-left .gesture-camera {
-  width: 100%; flex-shrink: unset;
-}
+.camera-header { display: flex; justify-content: space-between; align-items: center; }
+.camera-title { font-size: .7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .4px; }
+.status-dot { font-size: .65rem; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+.status-dot.active { background: var(--success-bg); color: var(--accent-dark); }
+.status-dot.loading { background: var(--bg); color: var(--text-muted); }
+.camera-feed { position: relative; border-radius: var(--radius-md); overflow: hidden; background: #0f172a; aspect-ratio: 4/3; width: 100%; }
+.camera-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+.camera-canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+.slider-hint-badge { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(79,70,229,.85); color: #fff; font-size: .65rem; font-weight: 700; padding: 5px 14px; border-radius: 99px; white-space: nowrap; backdrop-filter: blur(4px); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+.camera-prompt { font-size: .75rem; color: var(--text-muted); text-align: center; }
+.ai-status { font-size: .7rem; color: var(--text-muted); text-align: center; }
+.ai-status .ready { color: var(--accent); font-weight: 600; }
+.detected-gesture { color: var(--primary); font-weight: 600; }
+.gesture-camera.dark-theme { background: #1e293b; border-color: #334155; }
+.modal-camera-wrap .gesture-camera, .logout-confirm-right .gesture-camera, .block-auth-left .gesture-camera, .replace-modal-left .gesture-camera { width: 100%; flex-shrink: unset; }

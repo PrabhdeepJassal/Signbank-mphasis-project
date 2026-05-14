@@ -1,70 +1,45 @@
 .operator-dashboard { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
 .commands-panel { flex: 1; min-width: 280px; }
-.commands-panel h1 { font-size: 1.25rem; font-weight: 700; color: var(--lt-text); margin: 0 0 20px; }
-.command-cards { display: flex; flex-direction: column; gap: 12px; }
+.commands-panel h1 { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+.command-cards { display: flex; flex-direction: column; gap: 10px; }
 .command-card {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 32px; padding: 20px 22px; border-radius: var(--r-lg);
-  cursor: pointer; transition: all var(--t);
-  box-shadow: var(--shadow-xs); background: #fff; border: 1px solid var(--lt-border);
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 20px; border-radius: var(--radius-lg);
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: all var(--t);
 }
-.command-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.cmd-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.cmd-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.cmd-name { font-size: 0.95rem; font-weight: 700; color: var(--lt-text); }
-.cmd-gesture { font-size: 0.75rem; color: var(--lt-muted); }
-.cmd-gesture strong { color: var(--lt-text); }
-.cmd-symbol { font-size: 1.6rem; margin-left: 12px; flex-shrink: 0; }
-.dashboard-logout-btn {
-  margin-top: 24px;
-  background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.25);
-  color: var(--error); padding: 11px 24px; border-radius: var(--r-sm);
-  font-size: 0.85rem; font-weight: 600; cursor: pointer;
-  transition: all var(--t); display: inline-flex; align-items: center; gap: 8px;
-}
-.dashboard-logout-btn:hover { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.45); transform: translateY(-1px); }
+.command-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: #d1d5db; }
+.cmd-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cmd-info { flex: 1; }
+.cmd-name { font-size: .9rem; font-weight: 700; color: var(--text); }
+.cmd-gesture { font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
+.cmd-symbol { font-size: 1.5rem; flex-shrink: 0; }
+.dashboard-logout-btn { margin-top: 20px; padding: 10px 22px; border-radius: var(--radius-sm); background: var(--error-bg); color: var(--error); border: 1px solid rgba(239,68,68,.15); font-size: .85rem; font-weight: 600; transition: all var(--t); display: inline-flex; align-items: center; gap: 8px; }
+.dashboard-logout-btn:hover { background: #fee2e2; }
 
-.logout-confirm-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.75);
-  backdrop-filter: blur(8px); z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-  animation: fadeInOverlay 0.2s ease;
-}
-@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-.logout-confirm-box {
-  background: var(--dk-surface); border: 1px solid var(--dk-border);
-  border-radius: var(--r-2xl); padding: 2rem; width: 820px; max-width: 96vw;
-  display: flex; flex-direction: row; gap: 2rem; align-items: flex-start;
-  animation: popUpModal 0.25s var(--t-bounce);
-  box-shadow: var(--shadow-lg);
-}
-@keyframes popUpModal { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.logout-confirm-left { display: flex; flex-direction: column; gap: 1rem; width: 320px; flex-shrink: 0; }
-.logout-confirm-right { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
-.logout-camera-label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 700; color: #60a5fa; letter-spacing: 0.06em; }
-.logout-cam-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--error); animation: blinkDot 1s ease infinite; flex-shrink: 0; }
-@keyframes blinkDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-.logout-confirm-icon {
-  width: 60px; height: 60px; border-radius: 50%;
-  background: rgba(239,68,68,.12); border: 2px solid rgba(239,68,68,.3);
-  display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
-}
-.logout-confirm-title { font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin: 0; }
-.logout-confirm-desc { font-size: 0.85rem; color: var(--dk-muted); line-height: 1.6; margin: 0; }
-.logout-gesture-hints { display: flex; flex-direction: column; gap: 0.5rem; }
-.logout-gesture-item {
-  display: flex; align-items: center; gap: 0.85rem;
-  padding: 0.7rem 0.9rem; border-radius: var(--r-md);
-}
-.logout-gesture-item.yes { background: #052e16; border: 1px solid #16a34a; }
-.logout-gesture-item.no { background: #1c1917; border: 1px solid #44403c; }
-.logout-gesture-item.back { background: rgba(30,58,95,.13); border: 1px solid rgba(37,99,235,.27); }
-.logout-gesture-icon { font-size: 1.4rem; flex-shrink: 0; }
-.logout-gesture-label { font-size: 0.8rem; font-weight: 700; color: #f8fafc; }
-.logout-gesture-sub { font-size: 0.7rem; color: var(--dk-muted); margin-top: 0.1rem; }
-.logout-confirm-buttons { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
-.logout-cancel-btn { flex: 1; padding: 0.8rem; border-radius: var(--r-md); border: 1px solid #475569; background: transparent; color: var(--dk-muted); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all var(--t); font-family: inherit; }
-.logout-cancel-btn:hover { background: #334155; color: #e2e8f0; }
-.logout-confirm-btn { flex: 1; padding: 0.8rem; border-radius: var(--r-md); border: none; background: var(--error); color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all var(--t); font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.logout-confirm-btn:hover { background: #dc2626; transform: translateY(-1px); }
-@media (max-width: 700px) { .logout-confirm-box { flex-direction: column; width: 95vw; } .logout-confirm-left { width: 100%; } }
+.logout-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn .15s ease; }
+.logout-confirm-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 28px; width: 780px; max-width: 94vw; display: flex; gap: 28px; align-items: flex-start; box-shadow: var(--shadow-xl); animation: slideUp .2s ease; }
+.logout-confirm-left { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+.logout-confirm-right { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.logout-camera-label { display: flex; align-items: center; gap: 6px; font-size: .72rem; font-weight: 700; color: var(--primary); letter-spacing: .4px; }
+.logout-cam-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--error); animation: blink 1s ease infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .2; } }
+.logout-confirm-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: var(--error-bg); border: 2px solid rgba(239,68,68,.2); }
+.logout-confirm-title { font-size: 1.1rem; font-weight: 800; }
+.logout-confirm-desc { font-size: .85rem; color: var(--text-secondary); line-height: 1.6; }
+.logout-gesture-hints { display: flex; flex-direction: column; gap: 6px; }
+.logout-gesture-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius-sm); }
+.logout-gesture-item.yes { background: var(--success-bg); border: 1px solid rgba(16,185,129,.15); }
+.logout-gesture-item.no { background: var(--bg); border: 1px solid var(--border); }
+.logout-gesture-item.back { background: var(--info-bg); border: 1px solid rgba(59,130,246,.15); }
+.logout-gesture-icon { font-size: 1.2rem; flex-shrink: 0; }
+.logout-gesture-label { font-size: .82rem; font-weight: 700; }
+.logout-gesture-sub { font-size: .7rem; color: var(--text-muted); }
+.logout-confirm-buttons { display: flex; gap: 10px; margin-top: 4px; }
+.logout-cancel-btn, .logout-confirm-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); font-size: .85rem; font-weight: 700; transition: all var(--t); }
+.logout-cancel-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+.logout-cancel-btn:hover { background: var(--bg); }
+.logout-confirm-btn { background: var(--error); color: #fff; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.logout-confirm-btn:hover { background: #dc2626; }
+@media (max-width: 700px) { .logout-confirm-box { flex-direction: column; } .logout-confirm-left { width: 100%; } }
