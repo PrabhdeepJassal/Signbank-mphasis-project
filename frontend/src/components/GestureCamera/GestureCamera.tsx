@@ -2,15 +2,14 @@ import { useRef, useState } from 'react';
 import {
   useGestureControl,
   type GestureEvent,
-  type LandmarkPoint,
+  type HandData,
 } from '../../hooks/useGestureControl';
 import './GestureCamera.css';
 
 interface Props {
   onGesture?:          (event: GestureEvent) => void;
-  onLandmarks?:        (landmarks: LandmarkPoint[]) => void;
+  onLandmarks?:        (hands: HandData[]) => void;
   onGestureDetected?:  (name: string) => void;
-  
   sliderMode?: boolean;
 }
 
@@ -22,19 +21,24 @@ export default function GestureCamera({
 }: Props) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [lastGesture, setLastGesture] = useState('');
-  const [active,      setActive]      = useState(false);
+  const [lastGestures, setLastGestures] = useState<{ h0: string; h1: string }>({ h0: '', h1: '' });
+  const [active, setActive] = useState(false);
+  const [handCount, setHandCount] = useState(0);
 
   useGestureControl(videoRef, canvasRef, {
     sliderMode,
-    onLandmarks,
+    onLandmarks: (hands) => {
+      setHandCount(hands.length);
+      onLandmarks?.(hands);
+    },
     onGesture: (evt) => {
       if (evt.type !== 'SLIDER_ACTIVE' && evt.type !== 'SLIDER_COMMIT') {
         const label =
           evt.type === 'DIGIT'      ? `${evt.value} finger(s)` :
           evt.type === 'GESTURE_ID' ? evt.id :
           evt.type;
-        setLastGesture(label);
+        const hand = 'hand' in evt ? (evt as any).hand ?? 0 : 0;
+        setLastGestures(prev => hand === 0 ? { ...prev, h0: label } : { ...prev, h1: label });
       }
       setActive(true);
       onGesture?.(evt);
@@ -47,11 +51,13 @@ export default function GestureCamera({
   });
 
   return (
-    <div className="gesture-camera">
+    <div className={`gesture-camera ${active ? 'active' : ''}`}>
       <div className="camera-header">
-        <span className="camera-title">Live Gesture Detection</span>
+        <span className="camera-title">
+          {handCount > 1 ? '✋🤚 Both Hands Detected' : handCount === 1 ? '✋ Gesture Detection' : 'Gesture Detection'}
+        </span>
         <span className={`status-dot ${active ? 'active' : 'loading'}`}>
-          {active ? '● Active' : '● Loading'}
+          {active ? `● ${handCount} hand${handCount !== 1 ? 's' : ''}` : '● Loading'}
         </span>
       </div>
 
@@ -65,16 +71,20 @@ export default function GestureCamera({
 
       <div className="camera-prompt">
         {sliderMode
-          ? 'Hold 🤘 Rock gesture → move hand left/right → 👍 Thumb Up to confirm'
-          : 'Show a hand gesture to continue'}
+          ? 'Hold 🤘 Rock gesture with one hand → move left/right → 👍 Thumb Up to confirm'
+          : 'Show one or both hands to interact'}
       </div>
       <div className="ai-status">
-        AI Detection:{' '}
-        <span className={active ? 'ready' : 'not-ready'}>
-          {active ? 'Ready' : 'Initializing'}
-        </span>
-        {lastGesture && (
-          <span className="detected-gesture"> · {lastGesture}</span>
+        {handCount >= 1 && lastGestures.h0 && (
+          <span className="hand-status">✋ H1: <strong className="detected-gesture">{lastGestures.h0}</strong></span>
+        )}
+        {handCount >= 2 && lastGestures.h1 && (
+          <span className="hand-status" style={{ marginLeft: 12 }}>🤚 H2: <strong className="detected-gesture">{lastGestures.h1}</strong></span>
+        )}
+        {handCount === 0 && (
+          <span className={active ? 'ready' : 'not-ready'}>
+            {active ? 'Waiting for hands...' : 'Initializing camera...'}
+          </span>
         )}
       </div>
     </div>

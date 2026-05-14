@@ -20,10 +20,12 @@
   animation:pulse 2s ease-in-out infinite
 }
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-.camera-prompt{font-size:.72rem;color:var(--text3);text-align:center}
-.ai-status{font-size:.65rem;color:var(--text3);text-align:center}
+.camera-prompt{font-size:.72rem;color:var(--text3);text-align:center;line-height:1.4}
+.ai-status{font-size:.7rem;color:var(--text3);text-align:center;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
 .ai-status .ready{color:#34d399;font-weight:600}
-.detected-gesture{color:var(--primary-light);font-weight:600}
+.ai-status .not-ready{color:var(--text3)}
+.hand-status{background:var(--bg2);padding:3px 12px;border-radius:99px;border:1px solid var(--border)}
+.detected-gesture{color:var(--primary-light);font-weight:700}
 .modal-camera-wrap .gesture-camera,
 .logout-confirm-right .gesture-camera,
 .block-auth-left .gesture-camera,

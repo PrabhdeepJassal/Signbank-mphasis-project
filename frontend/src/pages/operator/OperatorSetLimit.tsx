@@ -4,7 +4,7 @@ import GestureCamera from '../../components/GestureCamera/GestureCamera';
 import { useAuth } from '../../context/AuthContext';
 import { setTransactionLimit, analyseFingerMovement } from '../../api/gestureApi';
 import apiClient from '../../api/client';
-import type { GestureEvent, LandmarkPoint } from '../../hooks/useGestureControl';
+import type { GestureEvent, HandData } from '../../hooks/useGestureControl';
 import './OperatorSetLimit.css';
 
 const MIN_LIMIT = 500;
@@ -136,7 +136,7 @@ export default function OperatorSetLimit() {
     }
   }, [doSave, navigate, cardType]);
 
-  const handleLandmarks = useCallback((_lm: LandmarkPoint[]) => { }, []);
+  const handleLandmarks = useCallback((_hands: HandData[]) => { }, []);
 
   const dirColor = sliderActive ? '#7c3aed' : '#94a3b8';
 
