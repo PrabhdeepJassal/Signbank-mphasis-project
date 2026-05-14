@@ -1,13 +1,23 @@
-.viewer-dashboard { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
-.viewer-dashboard .commands-panel { flex: 1; min-width: 280px; }
-.viewer-dashboard .commands-panel h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; }
-.viewer-command-cards { display: flex; flex-direction: column; gap: 10px; }
-.viewer-cmd-card { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); cursor: pointer; transition: all var(--t); }
-.viewer-cmd-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.vcmd-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.vcmd-info { flex: 1; }
-.vcmd-name { font-size: .9rem; font-weight: 700; }
-.vcmd-gesture { font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
-.vcmd-symbol { font-size: 1.5rem; flex-shrink: 0; }
-.viewer-logout-btn { margin-top: 20px; padding: 10px 22px; border-radius: var(--radius-sm); background: var(--error-bg); color: var(--error); border: 1px solid rgba(239,68,68,.15); font-size: .85rem; font-weight: 600; transition: all var(--t); }
-.viewer-logout-btn:hover { background: #fee2e2; }
+.viewer-dashboard{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+.viewer-dashboard .commands-panel{flex:1;min-width:280px}
+.viewer-dashboard .commands-panel h2{font-size:1.1rem;font-weight:700;margin-bottom:18px}
+.viewer-command-cards{display:flex;flex-direction:column;gap:10px}
+.viewer-cmd-card{
+  display:flex;align-items:center;gap:18px;padding:18px 22px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);cursor:pointer;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1)
+}
+.viewer-cmd-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.08);box-shadow:var(--shadow-md)}
+.vcmd-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.vcmd-info{flex:1}
+.vcmd-name{font-size:.88rem;font-weight:700}
+.vcmd-gesture{font-size:.72rem;color:var(--text3);margin-top:3px}
+.vcmd-symbol{font-size:1.6rem;flex-shrink:0}
+.viewer-logout-btn{
+  margin-top:20px;padding:11px 24px;border-radius:var(--r-sm);
+  background:var(--error-bg);color:#f87171;
+  border:1px solid rgba(239,68,68,.15);
+  font-size:.85rem;font-weight:600;transition:all var(--t)
+}
+.viewer-logout-btn:hover{background:rgba(239,68,68,.18)}

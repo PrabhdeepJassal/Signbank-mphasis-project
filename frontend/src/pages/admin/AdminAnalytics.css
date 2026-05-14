@@ -1,25 +1,32 @@
-.analytics-page { max-width: 1000px; margin: 0 auto; }
-.analytics-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-.analytics-page h1 { font-size: 1.5rem; font-weight: 800; }
-.analytics-sub { font-size: .85rem; color: var(--text-secondary); margin-top: 4px; }
-.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
-.stat-card { background: var(--surface); border-radius: var(--radius-lg); padding: 22px; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-.stat-card.blue { border-top: 3px solid var(--info); }
-.stat-card.green { border-top: 3px solid var(--success); }
-.stat-card.red { border-top: 3px solid var(--error); }
-.stat-card.purple { border-top: 3px solid var(--primary); }
-.stat-num { font-size: 1.75rem; font-weight: 800; color: var(--text); }
-.stat-label { font-size: .78rem; color: var(--text-secondary); margin-top: 4px; }
-.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
-.chart-card { background: var(--surface); border-radius: var(--radius-lg); padding: 22px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-.chart-card.full-width { grid-column: 1 / -1; }
-.chart-card h3 { font-size: .9rem; font-weight: 700; margin-bottom: 16px; }
-.recent-logs { background: var(--surface); border-radius: var(--radius-lg); padding: 22px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-.recent-logs h3 { font-size: .9rem; font-weight: 700; margin-bottom: 16px; }
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th { padding: 12px 16px; text-align: left; font-size: .7rem; font-weight: 700; color: var(--text-secondary); background: var(--bg); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .4px; }
-.data-table td { padding: 12px 16px; font-size: .85rem; color: var(--text); border-bottom: 1px solid var(--border-light); }
-.data-table tr:hover td { background: var(--surface-hover); }
-.status-badge { padding: 2px 10px; border-radius: 99px; font-size: .75rem; font-weight: 600; }
-.status-badge.success { background: var(--success-bg); color: var(--accent-dark); }
-.status-badge.failed { background: var(--error-bg); color: var(--error); }
+.analytics-page{max-width:1000px;margin:0 auto}
+.analytics-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.analytics-page h1{font-size:1.5rem;font-weight:800}
+.analytics-sub{font-size:.85rem;color:var(--text3);margin-top:4px}
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:24px;text-align:center
+}
+.stat-card.blue{border-top:3px solid var(--info)}
+.stat-card.green{border-top:3px solid #34d399}
+.stat-card.red{border-top:3px solid #f87171}
+.stat-card.purple{border-top:3px solid var(--primary)}
+.stat-num{font-size:1.75rem;font-weight:800;color:var(--text)}
+.stat-label{font-size:.75rem;color:var(--text3);margin-top:4px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px}
+.chart-card.full-width{grid-column:1 / -1}
+.chart-card h3{font-size:.88rem;font-weight:700;margin-bottom:16px}
+.recent-logs{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px}
+.recent-logs h3{font-size:.88rem;font-weight:700;margin-bottom:16px}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{
+  padding:12px 16px;text-align:left;font-size:.65rem;font-weight:700;
+  color:var(--text3);background:var(--bg2);
+  border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px
+}
+.data-table td{padding:12px 16px;font-size:.82rem;color:var(--text2);border-bottom:1px solid var(--border-light)}
+.data-table tr:hover td{background:var(--surface2)}
+.status-badge{padding:3px 12px;border-radius:99px;font-size:.72rem;font-weight:600}
+.status-badge.success{background:var(--success-bg);color:#34d399}
+.status-badge.failed{background:var(--error-bg);color:#f87171}
