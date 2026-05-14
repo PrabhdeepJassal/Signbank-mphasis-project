@@ -1,0 +1,81 @@
+.landing-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a0a2e 0%, #1a0a2e 50%, #1a0a2e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 56px;
+  padding: 40px;
+}
+
+.landing-brand { text-align: center; }
+
+.landing-logo {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #059669, #7c3aed);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 1px;
+  margin: 0 auto 16px;
+}
+
+.landing-brand h1 { font-size: 36px; font-weight: 900; color: #fff; margin: 0 0 8px; letter-spacing: -0.5px; }
+.landing-brand p { font-size: 14px; color: #7c3aed; font-weight: 500; margin: 0; letter-spacing: 0.3px; }
+
+.landing-cards {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.landing-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 36px 32px;
+  width: 180px;
+  text-align: center;
+  cursor: pointer;
+  backdrop-filter: blur(20px);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.landing-card:hover { transform: translateY(-5px); }
+.landing-card.admin:hover { border-color: #585858; box-shadow: 0 12px 40px rgba(124,58,237,0.25); }
+.landing-card.operator:hover { border-color: #059669; box-shadow: 0 12px 40px rgba(5,150,105,0.25); }
+.landing-card.viewer:hover { border-color: #059669; box-shadow: 0 12px 40px rgba(5,150,105,0.25); }
+
+.role-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin: 0 auto 16px;
+}
+.admin-badge { background: linear-gradient(135deg, #ed3a3a, #5b21b6); }
+.operator-badge { background: linear-gradient(135deg, #29c702, #047857); }
+.viewer-badge { background: linear-gradient(135deg, #29c702, #0369a1); }
+
+.landing-card h2 { font-size: 18px; font-weight: 800; color: #fff; margin: 0 0 6px; }
+.landing-card p { font-size: 12px; color: #64748b; margin: 0; }
+
+.gesture-hint-landing {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #7c3aed;
+  font-weight: 600;
+  opacity: 0.9;
+}

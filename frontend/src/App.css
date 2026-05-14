@@ -1,0 +1,10 @@
+/* App-level styles — component styles are co-located */
+
+.page-container {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.page-exit {
+    transform: scale(0.85);
+    opacity: 0;
+}

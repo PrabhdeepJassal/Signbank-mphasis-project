@@ -1,0 +1,115 @@
+.cards-layout {
+  min-height: 100vh;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #e2e8f0;
+}
+
+/* Header */
+.cards-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+.cards-back-btn {
+  background: none;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+.cards-back-btn:hover { background: #334155; color: #e2e8f0; }
+.gesture-hint   { font-size: 0.75rem; color: #64748b; }
+.cards-brand    { display: flex; flex-direction: column; align-items: center; }
+.cards-title    { font-size: 1.125rem; font-weight: 700; color: #f8fafc; }
+.cards-sub      { font-size: 0.75rem; color: #64748b; letter-spacing: 0.05em; }
+
+/* Main */
+.cards-main { flex: 1; padding: 2rem; }
+.cards-page {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.cards-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* User info */
+.cards-user-info {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+}
+.cards-user-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+.cards-user-name  { font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem; }
+
+.cards-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Command cards */
+.card-command-list { display: flex; flex-direction: column; gap: 1rem; }
+
+.card-command-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.card-command-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(124,58,237,0.2);
+}
+.card-cmd-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.card-cmd-info   { flex: 1; }
+.card-cmd-name   { font-size: 1rem; font-weight: 700; color: #1e293b; }
+.card-cmd-desc   { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+.card-cmd-gesture{ font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+.card-cmd-gesture strong { color: #374151; }
+.card-cmd-symbol { font-size: 2rem; }
+
+/* Guide */
+.cards-gesture-guide {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.guide-item {
+  display: flex; align-items: center;
+  gap: 0.75rem; font-size: 0.85rem; color: #94a3b8;
+}
+.guide-item span:first-child { font-size: 1.1rem; width: 1.8rem; text-align: center; }
+
+@media (max-width: 768px) { .cards-page { flex-direction: column; } }

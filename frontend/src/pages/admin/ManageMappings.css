@@ -1,0 +1,67 @@
+.mapping-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  background: #fff;
+  padding: 8px;
+  border-radius: 10px;
+  width: fit-content;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.tab-btn {
+  padding: 10px 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #f1f5f9;
+  color: #374151;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.tab-btn.active { background: #2563eb; color: #fff; }
+.tab-btn:hover:not(.active) { background: #e2e8f0; }
+
+.mapping-content { display: flex; flex-direction: column; gap: 24px; }
+
+.role-title { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 16px; text-align: center; }
+
+.mapping-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.page-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+/* Add mapping button in table cells */
+.action-btn.add-mapping-btn {
+  background: rgba(5, 150, 105, 0.08);
+  border-color: rgba(5, 150, 105, 0.3);
+  color: #059669;
+}
+.action-btn.add-mapping-btn:hover {
+  background: rgba(5, 150, 105, 0.18);
+}
+
+/* Form error */
+.form-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}

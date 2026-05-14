@@ -1,0 +1,33 @@
+### Maven ###
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+apache-maven-*/
+
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.ipr
+*.iws
+
+### Eclipse / STS ###
+.classpath
+.project
+.settings/
+.springBeans
+.apt_generated
+.factorypath
+.sts4-cache
+
+### VS Code ###
+.vscode/
+
+### Gradle ###
+build/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Local config ###
+src/main/resources/application-local.properties

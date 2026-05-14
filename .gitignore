@@ -1,0 +1,13 @@
+node_modules/
+dist/
+target/
+*.log
+.env
+.env.local
+.DS_Store
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+apache-maven-*/

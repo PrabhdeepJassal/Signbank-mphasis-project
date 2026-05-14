@@ -1,0 +1,99 @@
+.portal-layout {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #f0fdf4 0%, #faf5ff 50%, #f0fdf4 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-header {
+  background: #fff;
+  border-bottom: 2px solid transparent;
+  background-clip: padding-box;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  box-shadow: 0 2px 12px rgba(124,58,237,0.08);
+  position: relative;
+}
+
+.portal-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #059669, #7c3aed);
+}
+
+.portal-title-block { display: flex; flex-direction: column; gap: 2px; }
+.portal-title { font-size: 22px; font-weight: 800; color: #1e293b; margin: 0; }
+.portal-subtitle { font-size: 12px; color: #7c3aed; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.portal-logout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(239,68,68,0.2);
+  background: rgba(239,68,68,0.04);
+  transition: all 0.2s;
+  gap: 2px;
+}
+.portal-logout:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); }
+.logout-label { font-size: 14px; font-weight: 700; color: #ef4444; }
+.logout-gesture { font-size: 12px; color: #94a3b8; font-weight: 500; }
+
+.portal-logout-btn {
+  background: #ef4444;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #fff;
+  font-weight: 600;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.portal-logout-btn:hover { background: #dc2626; transform: translateY(-1px); }
+
+.logout-gesture-hint {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.portal-back-btn {
+  background: rgba(124,58,237,0.06);
+  border: 1px solid rgba(124,58,237,0.2);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #7c3aed;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  transition: all 0.15s;
+}
+.portal-back-btn:hover { background: rgba(124,58,237,0.12); }
+.back-gesture { font-size: 12px; color: #94a3b8; font-weight: 400; }
+
+.portal-main {
+  flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
