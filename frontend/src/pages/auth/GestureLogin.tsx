@@ -36,10 +36,15 @@ function resolveEmoji(g: Gesture): string {
 
 const DIGIT_GESTURES: [string, string, string][] = [
   ['1', '☝️', 'One Finger'],
-  ['2', '✌️', 'Two Finger'],
-  ['3', '🤌', 'Three Finger'],
-  ['4', '🤘', 'Closed Mid Two'],
-  ['5', '🖐️', 'Open Palm'],
+  ['2', '✌️', 'Two Fingers'],
+  ['3', '🤌', 'Three Fingers'],
+  ['4', '🤘', 'Four Fingers'],
+  ['5', '🖐️', 'Five Fingers'],
+  ['6', '🖐️☝️', 'Six Fingers'],
+  ['7', '🖐️✌️', 'Seven Fingers'],
+  ['8', '🖐️🤌', 'Eight Fingers'],
+  ['9', '🖐️🤘', 'Nine Fingers'],
+  ['10', '🖐️🖐️', 'Ten Fingers'],
 ];
 
 const FALLBACK_GESTURES: Gesture[] = [
@@ -91,7 +96,8 @@ export default function GestureLogin() {
   const fistGesture = getById(RESERVED.FIST);
 
   const addDigit = useCallback((d: string) => {
-    if (d < '1' || d > '5') return;
+    const val = parseInt(d, 10);
+    if (isNaN(val) || val < 1 || val > 10) return;
     setDigits(p => p.length < 4 ? [...p, d] : p);
   }, []);
 
@@ -235,7 +241,7 @@ export default function GestureLogin() {
             <section aria-label="User ID entry">
               <span className="gl-badge">Step 1</span>
               <h2>Enter User ID</h2>
-              <p className="gl-hint">Show 1–5 fingers for each digit · <span aria-label="thumbs up to confirm">👍 Confirm</span> · <span aria-label="thumbs down for backspace">👎 Backspace</span></p>
+              <p className="gl-hint">Show 1–10 fingers (using 1 or 2 hands) for each digit · <span aria-label="thumbs up to confirm">👍 Confirm</span> · <span aria-label="thumbs down for backspace">👎 Backspace</span></p>
               <div className="digit-boxes" role="group" aria-label="User ID digits">
                 {[0,1,2,3].map(i => (
                   <div key={i} className={`digit-box ${digits[i] ? 'filled' : ''}`} aria-label={`Digit ${i + 1}${digits[i] ? `: ${digits[i]}` : ': empty'}`}>

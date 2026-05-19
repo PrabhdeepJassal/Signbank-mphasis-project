@@ -1,3 +1,110 @@
-.viewer-logs-layout{display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap}
-.logs-content{flex:1;min-width:300px}
-.empty-row{text-align:center;color:var(--text3)!important;padding:2.5rem!important}
+.viewer-logs-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 30px;
+  background: radial-gradient(circle at 10% 20%, rgba(20, 20, 35, 0.95) 0%, rgba(10, 10, 18, 0.98) 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+}
+
+.logs-content {
+  flex: 1;
+  min-width: 320px;
+}
+
+/* Glass table card */
+.table-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  margin-top: 15px;
+  backdrop-filter: blur(12px);
+}
+
+/* Glass modern table styles */
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.logs-table th {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 18px 24px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logs-table td {
+  padding: 16px 24px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.2s ease;
+}
+
+.logs-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+}
+
+.logs-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Elegant Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.status-badge.SUCCESS,
+.status-badge.success,
+.status-badge.COMPLETED,
+.status-badge.completed {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.05);
+}
+
+.status-badge.FAILURE,
+.status-badge.failure,
+.status-badge.FAILED,
+.status-badge.failed {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.05);
+}
+
+.status-badge.PENDING,
+.status-badge.pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.05);
+}
+
+.empty-row {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4) !important;
+  padding: 48px !important;
+  font-size: 0.95rem;
+}

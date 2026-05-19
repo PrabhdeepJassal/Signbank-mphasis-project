@@ -25,10 +25,12 @@ export interface UseGestureControlOptions {
 
 const FINGER_TO_GESTURE_ID: Record<string, string> = {
   '1': 'G001', '2': 'G002', '3': 'G003', '4': 'G004', '5': 'G005',
+  '6': 'G001', '7': 'G002', '8': 'G003', '9': 'G004', '10': 'G005',
 };
 const RAW_TO_EMOJI: Record<string, string> = {
   THUMB_UP: '👍', THUMB_DOWN: '👎', FIST: '✊', ROCK: '🤘', OK: '👌', OPEN_PALM: '🖐️',
   '0': '✊', '1': '☝️', '2': '✌️', '3': '🤌', '4': '🤘', '5': '🖐️',
+  '6': '🖐️☝️', '7': '🖐️✌️', '8': '🖐️🤌', '9': '🖐️🤘', '10': '🖐️🖐️',
 };
 
 const BUFFER_SIZE = 20;
@@ -37,6 +39,7 @@ const COOLDOWN_MS = 2200;
 const ROCK_HOLD_MS = 700;
 
 declare const Hands: any;
+declare const FaceDetection: any;
 declare const HAND_CONNECTIONS: any;
 declare const drawConnectors: any;
 declare const drawLandmarks: any;
@@ -86,6 +89,64 @@ function drawHoldRing(ctx: CanvasRenderingContext2D, cx: number, cy: number, pct
   ctx.fillText('Hold 🤘', cx, cy - 42); ctx.restore();
 }
 
+// drawScrollButtons removed as requested
+
+function drawPinchScrollbar(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  thumbY: number,
+  isLocked: boolean,
+  isHovered: boolean,
+  pointerX?: number,
+  pointerY?: number
+) {
+  ctx.save();
+
+  // 1. Draw track (Left Side)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(10, 30, 8, H - 60, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  // 2. Draw hover target guide
+  if (isHovered && !isLocked) {
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // 3. Draw thumb handle
+  ctx.shadowBlur = isLocked ? 15 : isHovered ? 8 : 0;
+  ctx.shadowColor = isLocked ? '#a78bfa' : '#38bdf8';
+  const grad = ctx.createLinearGradient(10, thumbY - 15, 18, thumbY + 15);
+  if (isLocked) {
+    grad.addColorStop(0, '#f43f5e');
+    grad.addColorStop(1, '#a78bfa');
+  } else {
+    grad.addColorStop(0, '#38bdf8');
+    grad.addColorStop(1, '#0284c7');
+  }
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(8, thumbY - 15, 12, 30, 6);
+  ctx.fill();
+
+  // 4. Draw labels next to track (to the right of the left track)
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = isLocked ? '#f43f5e' : isHovered ? '#38bdf8' : 'rgba(255, 255, 255, 0.4)';
+  ctx.font = 'bold 9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(isLocked ? '🔒 DRAGGING' : '🤏 PINCH HERE TO DRAG', 26, thumbY + 3);
+
+  ctx.restore();
+}
+
 function drawConfidenceOverlay(ctx: CanvasRenderingContext2D, gesture: string, confidence: number, _W: number, H: number, hand: number) {
   if (!gesture || gesture === 'Unknown') return;
   ctx.save(); const label = `${hand === 0 ? '✋' : '🤚'} H${hand + 1}: ${RAW_TO_EMOJI[gesture] ?? gesture} ${confidence}%`;
@@ -122,6 +183,30 @@ export function useGestureControl(
     let prevSmoothedX = 0.5, velocity = 0;
     const ALPHA = 0.2, VEL_DECAY = 0.8, VEL_WEIGHT = 0.2;
     let frameCount = 0;
+    let isPinchLocked = false;
+    let pinchStartY: number | null = null;
+    let pinchStartScroll: number | null = null;
+    let targetScrollY = 0;
+    let currentScrollY = 0;
+    let cachedScrollContainer: HTMLElement | null = null;
+    let smoothedHandY = 0;
+    let faceDetectionInst: any = null;
+
+    // High-refresh-rate smooth scroll rendering thread (RAF)
+    let scrollAnimId = 0;
+    const smoothScrollLoop = () => {
+      if (isPinchLocked && cachedScrollContainer) {
+        // Friction lerp coefficient at native rate (usually 0.85/0.15)
+        currentScrollY = currentScrollY * 0.85 + targetScrollY * 0.15;
+        
+        cachedScrollContainer.scrollTop = currentScrollY;
+        if (cachedScrollContainer === document.documentElement || cachedScrollContainer === document.body) {
+          window.scrollTo(0, currentScrollY);
+        }
+      }
+      scrollAnimId = requestAnimationFrame(smoothScrollLoop);
+    };
+    scrollAnimId = requestAnimationFrame(smoothScrollLoop);
 
     function countFingers(lm: any[], label: string): number {
       let f = 0;
@@ -161,7 +246,7 @@ export function useGestureControl(
       else if (raw === 'ROCK') event = { type: 'ROCK', confidence, hand };
       else if (raw === 'OK') event = { type: 'OK', confidence, hand };
       else if (raw === 'OPEN_PALM') event = { type: 'OPEN_PALM', confidence, hand };
-      else if (/^[0-9]$/.test(raw)) {
+      else if (/^(10|[1-9])$/.test(raw)) {
         event = { type: 'DIGIT', value: raw, hand };
         const gid = FINGER_TO_GESTURE_ID[raw];
         if (gid) onGestureRef.current({ type: 'GESTURE_ID', id: gid, confidence, hand });
@@ -194,6 +279,118 @@ export function useGestureControl(
           modelComplexity: 1,
           minDetectionConfidence: 0.75,
           minTrackingConfidence: 0.7,
+        });
+
+        // Initialize FaceDetection for anti-peeking security (does not highlight/draw anything)
+        await new Promise<void>(res => { const poll = () => (typeof FaceDetection !== 'undefined' ? res() : setTimeout(poll, 100)); poll(); });
+        if (cancelled) return;
+
+        faceDetectionInst = new FaceDetection({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}` });
+        faceDetectionInst.setOptions({
+          model: 'short', // optimized for close-range/selfie cameras
+          minDetectionConfidence: 0.65
+        });
+
+        faceDetectionInst.onResults((results: any) => {
+          if (cancelled) return;
+          const faces = results.detections ?? [];
+          const faceCount = faces.length;
+
+          if (faceCount > 1) {
+            // PEER SECURITY VIOLATION: Show warning overlay and lock screen
+            let overlay = document.getElementById('peeking-warning-overlay');
+            if (!overlay) {
+              overlay = document.createElement('div');
+              overlay.id = 'peeking-warning-overlay';
+              overlay.innerHTML = `
+                <div class="peeking-content">
+                  <div class="peeking-icon">⚠️</div>
+                  <h1>SECURITY ALERT</h1>
+                  <p>SCREEN PEEKING DETECTED!</p>
+                  <div class="peeking-sub">SignBank Enterprise has locked the screen to protect your security. Please ask the peeking person to step away.</div>
+                </div>
+              `;
+              overlay.setAttribute('style', `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(10, 15, 30, 0.98);
+                backdrop-filter: blur(25px);
+                z-index: 999999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-family: system-ui, -apple-system, sans-serif;
+                text-align: center;
+                transition: opacity 0.3s ease;
+                opacity: 0;
+              `);
+              
+              const styleEl = document.createElement('style');
+              styleEl.id = 'peeking-warning-styles';
+              styleEl.innerHTML = `
+                #peeking-warning-overlay .peeking-content {
+                  max-width: 500px;
+                  padding: 40px;
+                  border: 2px solid #ef4444;
+                  border-radius: 24px;
+                  background: rgba(239, 68, 68, 0.05);
+                  box-shadow: 0 0 50px rgba(239, 68, 68, 0.3);
+                  animation: peekingPulse 2s infinite alternate;
+                }
+                #peeking-warning-overlay .peeking-icon {
+                  font-size: 72px;
+                  margin-bottom: 16px;
+                  display: inline-block;
+                  animation: peekingShake 0.5s infinite;
+                }
+                #peeking-warning-overlay h1 {
+                  font-size: 32px;
+                  color: #ef4444;
+                  font-weight: 800;
+                  margin: 0 0 8px 0;
+                  letter-spacing: 2px;
+                }
+                #peeking-warning-overlay p {
+                  font-size: 20px;
+                  font-weight: 600;
+                  margin: 0 0 20px 0;
+                  color: #f8fafc;
+                }
+                #peeking-warning-overlay .peeking-sub {
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #94a3b8;
+                }
+                @keyframes peekingPulse {
+                  from { box-shadow: 0 0 30px rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+                  to { box-shadow: 0 0 60px rgba(239, 68, 68, 0.6); border-color: rgba(239, 68, 68, 1); }
+                }
+                @keyframes peekingShake {
+                  0%, 100% { transform: rotate(0); }
+                  25% { transform: rotate(-8deg); }
+                  75% { transform: rotate(8deg); }
+                }
+              `;
+              document.head.appendChild(styleEl);
+              document.body.appendChild(overlay);
+              overlay.offsetHeight; // Force reflow
+              overlay.style.opacity = '1';
+            }
+          } else {
+            // Normal state: remove warning overlay
+            const overlay = document.getElementById('peeking-warning-overlay');
+            if (overlay) {
+              overlay.style.opacity = '0';
+              setTimeout(() => {
+                overlay.remove();
+                document.getElementById('peeking-warning-styles')?.remove();
+              }, 300);
+            }
+          }
         });
 
         handsInst.onResults((results: any) => {
@@ -232,8 +429,49 @@ export function useGestureControl(
               })));
             }
 
-            const raw0 = classifySingleHand(hands[0], handedness[0]?.label ?? 'Right');
-            const raw1 = hands.length > 1 ? classifySingleHand(hands[1], handedness[1]?.label ?? 'Left') : 'Unknown';
+            let raw0 = 'Unknown';
+            let raw1 = 'Unknown';
+            let isTwoHandDigit = false;
+
+            if (hands.length > 1) {
+              const f0 = countFingers(hands[0], handedness[0]?.label ?? 'Right');
+              const f1 = countFingers(hands[1], handedness[1]?.label ?? 'Left');
+              const sum = f0 + f1;
+              if (sum >= 1 && sum <= 10) {
+                isTwoHandDigit = true;
+                raw0 = String(sum);
+                raw1 = 'Unknown';
+              }
+            }
+
+            if (!isTwoHandDigit) {
+              raw0 = classifySingleHand(hands[0], handedness[0]?.label ?? 'Right');
+              raw1 = hands.length > 1 ? classifySingleHand(hands[1], handedness[1]?.label ?? 'Left') : 'Unknown';
+            }
+
+            // ── GESTURE DEADZONE FOR SCROLLBAR REGION (Left 60px or while active dragging) ──
+            if (hands.length > 0 && hands[0][8]) {
+              const tx = hands[0][8].x * W;
+              if (tx < 60 || isPinchLocked) {
+                if (isPinchLocked) {
+                  raw0 = 'OK';
+                } else if (raw0 !== 'OK') {
+                  raw0 = 'Unknown';
+                }
+                isTwoHandDigit = false;
+              }
+            }
+            if (hands.length > 1 && hands[1][8]) {
+              const tx = hands[1][8].x * W;
+              if (tx < 60 || isPinchLocked) {
+                if (isPinchLocked) {
+                  raw1 = 'OK';
+                } else if (raw1 !== 'OK') {
+                  raw1 = 'Unknown';
+                }
+                isTwoHandDigit = false;
+              }
+            }
 
             // BACK gesture from hand 0 only
             if (raw0 === 'OPEN_PALM') { openPalmSeen = true; backStartTime = null; }
@@ -268,6 +506,84 @@ export function useGestureControl(
               } else { exitSlider(); }
             }
 
+            // Touch-point scroll control using index finger tip & left air-scrollbar
+            let isNearScrollbar = false;
+
+            const activeContainer = cachedScrollContainer || document.documentElement || document.body;
+            const maxScroll = Math.max(100, activeContainer.scrollHeight - window.innerHeight);
+            const currentScroll = activeContainer.scrollTop;
+            const currentPct = Math.max(0, Math.min(1, currentScroll / maxScroll));
+            let thumbY = 30 + currentPct * (H - 60);
+
+            if (hands.length > 0) {
+              const tip = hands[0][8];   // Index finger tip landmark
+              const thumb = hands[0][4]; // Thumb tip landmark
+              if (tip && thumb) {
+                const tx = tip.x * W;
+                const ty = tip.y * H;
+
+                // 1. Instant raw pinch check using 3D Euclidean distance (zero recognition latency)
+                const dx = thumb.x - tip.x;
+                const dy = thumb.y - tip.y;
+                const dz = (thumb.z ?? 0) - (tip.z ?? 0);
+                const pinchDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                const isPinchingRaw = pinchDist < 0.048; // Highly sensitive raw pinch threshold
+
+                // 2. Check Scrollbar Hover/Drag (Left Side check: tx < 40)
+                if (tx < 40) {
+                  isNearScrollbar = true;
+                }
+
+                if (isPinchingRaw && (isNearScrollbar || isPinchLocked)) {
+                  if (!isPinchLocked) {
+                    isPinchLocked = true;
+                    pinchStartY = ty;
+                    smoothedHandY = ty;
+
+                    // Query DOM once on lock state to prevent style recalculation layout thrashing
+                    cachedScrollContainer = document.getElementById('portal-content') || 
+                                            document.querySelector('.portal-main') as HTMLElement || 
+                                            document.documentElement || 
+                                            document.body;
+
+                    pinchStartScroll = cachedScrollContainer ? cachedScrollContainer.scrollTop : (window.scrollY || document.documentElement.scrollTop);
+                    currentScrollY = pinchStartScroll;
+                    targetScrollY = pinchStartScroll;
+                  }
+
+                  if (pinchStartY !== null && pinchStartScroll !== null) {
+                    // Exponential Moving Average (EMA) to smooth out raw finger tip coordinate jitter/shaking
+                    smoothedHandY = smoothedHandY * 0.65 + ty * 0.35;
+                    const deltaY = smoothedHandY - pinchStartY;
+                    const sensitivity = maxScroll / (H - 60);
+                    targetScrollY = pinchStartScroll + deltaY * sensitivity;
+
+                    // Physical finger gluing with filtered coordinates
+                    thumbY = Math.max(30, Math.min(H - 30, smoothedHandY));
+                  }
+                } else {
+                  isPinchLocked = false;
+                  pinchStartY = null;
+                  pinchStartScroll = null;
+                }
+              }
+            } else {
+              isPinchLocked = false;
+              pinchStartY = null;
+              pinchStartScroll = null;
+            }
+
+            drawPinchScrollbar(
+              ctx,
+              W,
+              H,
+              thumbY,
+              isPinchLocked,
+              isNearScrollbar,
+              hands[0] ? hands[0][8].x * W : undefined,
+              hands[0] ? hands[0][8].y * H : undefined
+            );
+
             if (!inSlider) {
               const handsToProcess = [
                 { raw: raw0, buf: gestureBuffer0, idx: 0 },
@@ -290,7 +606,11 @@ export function useGestureControl(
                 drawConfidenceOverlay(ctx, hp.raw, conf, W, H, hp.idx);
 
                 if (hp.buf.filter(g => g === hp.raw).length >= CONFIRM_COUNT && hp.raw !== 'Unknown') {
-                  fireGesture(hp.raw, conf, hp.idx);
+                  if (hp.raw === 'OK' && isPinchLocked) {
+                    // Suppress fireGesture to prevent accidental clicks while dragging scrollbar
+                  } else {
+                    fireGesture(hp.raw, conf, hp.idx);
+                  }
                 }
               }
             }
@@ -305,8 +625,14 @@ export function useGestureControl(
         const loop = async () => {
           if (cancelled) return;
           const v = videoRef.current;
-          if (v && !v.paused && v.readyState >= 2)
-            try { await handsInst.send({ image: v }); } catch (_) { }
+          if (v && !v.paused && v.readyState >= 2) {
+            try {
+              await Promise.all([
+                handsInst.send({ image: v }),
+                faceDetectionInst.send({ image: v })
+              ]);
+            } catch (_) { }
+          }
           animId = requestAnimationFrame(loop);
         };
         animId = requestAnimationFrame(loop);
@@ -320,9 +646,14 @@ export function useGestureControl(
 
     init();
     return () => {
-      cancelled = true; cancelAnimationFrame(animId);
+      cancelled = true; 
+      cancelAnimationFrame(animId);
+      cancelAnimationFrame(scrollAnimId);
       stream?.getTracks().forEach(t => t.stop());
       handsInst?.close?.();
+      faceDetectionInst?.close?.();
+      document.getElementById('peeking-warning-overlay')?.remove();
+      document.getElementById('peeking-warning-styles')?.remove();
     };
   }, []);
 }
