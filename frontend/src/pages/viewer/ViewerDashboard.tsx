@@ -65,7 +65,6 @@ export default function ViewerDashboard() {
   }, [logout, navigate]);
 
   const handleGesture = useCallback((evt: GestureEvent) => {
-    // If logout confirm modal is open
     if (showLogoutConfirm) {
       if (evt.type === 'THUMB_UP')    { doLogout(); return; }
       if (evt.type === 'THUMB_DOWN')  { setShowLogoutConfirm(false); return; }
@@ -92,11 +91,9 @@ export default function ViewerDashboard() {
   }, [showLogoutConfirm, doLogout, dashCommands, mappings, gestures]);
 
   const cardAccents = ['#059669', '#7c3aed', '#2563eb', '#d97706'];
-  const cardBgs     = ['#f0fdf4', '#faf5ff', '#eff6ff', '#fffbeb'];
 
   return (
     <PortalLayout title="Viewer" subtitle="Portal">
-      {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <div className="logout-confirm-overlay">
           <div className="logout-confirm-box">
@@ -106,7 +103,6 @@ export default function ViewerDashboard() {
               <p className="logout-confirm-desc">
                 Are you sure you want to log out of SignBank?
               </p>
-
               <div className="logout-gesture-hints">
                 <div className="logout-gesture-item yes">
                   <span className="logout-gesture-icon">👍</span>
@@ -130,27 +126,13 @@ export default function ViewerDashboard() {
                   </div>
                 </div>
               </div>
-
               <div className="logout-confirm-buttons">
-                <button
-                  className="logout-cancel-btn"
-                  onClick={() => setShowLogoutConfirm(false)}
-                >
-                  ✕ Cancel
-                </button>
-                <button
-                  className="logout-confirm-btn"
-                  onClick={doLogout}
-                >
-                  👍 Logout
-                </button>
+                <button className="logout-cancel-btn" onClick={() => setShowLogoutConfirm(false)}>✕ Cancel</button>
+                <button className="logout-confirm-btn" onClick={doLogout}>👍 Logout</button>
               </div>
             </div>
-
             <div className="logout-confirm-right">
-              <div className="logout-camera-label">
-                <span className="logout-cam-dot" /> Live Gesture Camera
-              </div>
+              <div className="logout-camera-label"><span className="logout-cam-dot" /> Live Gesture Camera</div>
               <GestureCamera onGesture={handleGesture} />
             </div>
           </div>
@@ -163,11 +145,12 @@ export default function ViewerDashboard() {
           <div className="viewer-command-cards">
             {dashCommands.map((cmd, i) => {
               const gesture = getMappedGesture(cmd.commandId);
+              const accent = cardAccents[i % cardAccents.length];
               return (
                 <div key={cmd.commandId} className="viewer-cmd-card"
-                  style={{ background: cardBgs[i % cardBgs.length], borderLeft: `4px solid ${cardAccents[i % cardAccents.length]}` }}
+                  style={{ borderLeft: `4px solid ${accent}`, '--card-accent': accent + '18' } as React.CSSProperties}
                   onClick={() => handleCommandClick(cmd.commandName)}>
-                  <div className="vcmd-dot" style={{ background: cardAccents[i % cardAccents.length] }} />
+                  <div className="vcmd-dot" style={{ background: accent }} />
                   <div className="vcmd-info">
                     <div className="vcmd-name">{cmd.commandName}</div>
                     <div className="vcmd-gesture">Gesture: <strong>{gesture?.gestureName || '—'}</strong></div>
@@ -177,19 +160,9 @@ export default function ViewerDashboard() {
               );
             })}
           </div>
-
-          {/* Logout button */}
-          <button
-            className="viewer-logout-btn"
-            onClick={() => setShowLogoutConfirm(true)}
-          >
-            🚪 Logout
-          </button>
+          <button className="viewer-logout-btn" onClick={() => setShowLogoutConfirm(true)}>🚪 Logout</button>
         </div>
-
-        {!showLogoutConfirm && (
-          <GestureCamera onGesture={handleGesture} />
-        )}
+        {!showLogoutConfirm && <GestureCamera onGesture={handleGesture} />}
       </div>
     </PortalLayout>
   );

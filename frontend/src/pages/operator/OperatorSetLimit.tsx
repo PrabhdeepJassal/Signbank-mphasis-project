@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import GestureCamera from '../../components/GestureCamera/GestureCamera';
 import { useAuth } from '../../context/AuthContext';
-import { setTransactionLimit, analyseFingerMovement } from '../../api/gestureApi';
+import { setTransactionLimit } from '../../api/gestureApi';
 import apiClient from '../../api/client';
 import type { GestureEvent, HandData } from '../../hooks/useGestureControl';
 import './OperatorSetLimit.css';

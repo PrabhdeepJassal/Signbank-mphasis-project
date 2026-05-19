@@ -13,7 +13,6 @@ const CARDS = [
     gesture: 'Four Fingers',
     gestureId: 'G004',
     accent: '#7c3aed',
-    bg: '#faf5ff',
     desc: 'Manage your credit card settings',
   },
   {
@@ -23,7 +22,6 @@ const CARDS = [
     gesture: 'Two Fingers',
     gestureId: 'G002',
     accent: '#2563eb',
-    bg: '#eff6ff',
     desc: 'Manage your debit card settings',
   },
 ];
@@ -61,7 +59,6 @@ export default function OperatorCards() {
           <span className="gesture-hint">🖐️→✊ Open→Fist</span>
         </button>
         <div className="cards-brand">
-          {/* Task 4: Changed "Operator" → "User" */}
           <span className="cards-title">User</span>
           <span className="cards-sub">Check Cards</span>
         </div>
@@ -83,7 +80,7 @@ export default function OperatorCards() {
                 <div
                   key={card.id}
                   className="card-command-card"
-                  style={{ background: card.bg, borderLeft: `4px solid ${card.accent}` }}
+                  style={{ borderLeft: `4px solid ${card.accent}`, '--card-accent': card.accent + '18' } as React.CSSProperties}
                   onClick={() => handleCommandClick(card.id)}
                 >
                   <div className="card-cmd-dot" style={{ background: card.accent }} />

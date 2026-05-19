@@ -118,7 +118,7 @@ export default function ViewerAnalytics() {
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
               System Analytics
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -141,8 +141,8 @@ export default function ViewerAnalytics() {
 
           {error && (
             <div style={{
-              padding: '12px 16px', marginBottom: 16, borderRadius: 8,
-              background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '0.85rem'
+              padding: '12px 16px', marginBottom: 16, borderRadius: 'var(--r-sm)',
+              background: 'var(--error-bg)', border: '1px solid rgba(244,63,94,.12)', color: 'var(--accent-light)', fontSize: '0.85rem'
             }}>
               ⚠️ {error}
             </div>
@@ -162,12 +162,12 @@ export default function ViewerAnalytics() {
               <div className="ms-num">{failed}</div>
               <div className="ms-label">Failed</div>
             </div>
-            <div className="mini-stat" style={{ background: '#eff6ff' }}>
-              <div className="ms-num" style={{ color: '#2563eb' }}>{uniqueUsers}</div>
+            <div className="mini-stat" style={{ borderTop: '3px solid var(--info)' }}>
+              <div className="ms-num">{uniqueUsers}</div>
               <div className="ms-label">Active Users</div>
             </div>
-            <div className="mini-stat" style={{ background: '#fffbeb' }}>
-              <div className="ms-num" style={{ color: '#d97706' }}>{successRate}%</div>
+            <div className="mini-stat" style={{ borderTop: '3px solid var(--warning)' }}>
+              <div className="ms-num">{successRate}%</div>
               <div className="ms-label">Success Rate</div>
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function ViewerAnalytics() {
               <h3>Activity (last 10 min)</h3>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={activityData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" />
                   <XAxis dataKey="time" tick={{ fontSize: 9 }} />
                   <YAxis allowDecimals={false} />
                   <Tooltip />

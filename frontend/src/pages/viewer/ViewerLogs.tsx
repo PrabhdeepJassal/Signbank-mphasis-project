@@ -73,7 +73,7 @@ export default function ViewerLogs() {
 
           {/* Header with live indicator */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
               Interaction Logs
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -97,8 +97,8 @@ export default function ViewerLogs() {
 
           {error && (
             <div style={{
-              padding: '12px 16px', marginBottom: 16, borderRadius: 8,
-              background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '0.85rem'
+              padding: '12px 16px', marginBottom: 16, borderRadius: 'var(--r-sm)',
+              background: 'var(--error-bg)', border: '1px solid rgba(244,63,94,.12)', color: 'var(--accent-light)', fontSize: '0.85rem'
             }}>
               ⚠️ {error}
             </div>

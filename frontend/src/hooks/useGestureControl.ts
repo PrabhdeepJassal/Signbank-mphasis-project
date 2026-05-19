@@ -86,7 +86,7 @@ function drawHoldRing(ctx: CanvasRenderingContext2D, cx: number, cy: number, pct
   ctx.fillText('Hold 🤘', cx, cy - 42); ctx.restore();
 }
 
-function drawConfidenceOverlay(ctx: CanvasRenderingContext2D, gesture: string, confidence: number, W: number, H: number, hand: number) {
+function drawConfidenceOverlay(ctx: CanvasRenderingContext2D, gesture: string, confidence: number, _W: number, H: number, hand: number) {
   if (!gesture || gesture === 'Unknown') return;
   ctx.save(); const label = `${hand === 0 ? '✋' : '🤚'} H${hand + 1}: ${RAW_TO_EMOJI[gesture] ?? gesture} ${confidence}%`;
   const boxW = 220, boxH = 30, bx = 10, by = hand === 0 ? 10 : H - boxH - 10;
@@ -115,13 +115,13 @@ export function useGestureControl(
   useEffect(() => {
     let cancelled = false, animId = 0, handsInst: any = null, stream: MediaStream | null = null;
     let gestureBuffer0: string[] = [], gestureBuffer1: string[] = [];
-    let openPalmSeen = false, backStartTime: number | null = null, backProgress = 0;
+    let openPalmSeen = false, backStartTime: number | null = null;
     const BACK_HOLD_MS = 350;
     let lastFiredGesture = '', lastFiredTime = 0;
     let rockHoldStart: number | null = null, inSlider = false;
     let prevSmoothedX = 0.5, velocity = 0;
     const ALPHA = 0.2, VEL_DECAY = 0.8, VEL_WEIGHT = 0.2;
-    let frameCount = 0, LOG_EVERY = 15;
+    let frameCount = 0;
 
     function countFingers(lm: any[], label: string): number {
       let f = 0;
@@ -236,16 +236,15 @@ export function useGestureControl(
             const raw1 = hands.length > 1 ? classifySingleHand(hands[1], handedness[1]?.label ?? 'Left') : 'Unknown';
 
             // BACK gesture from hand 0 only
-            if (raw0 === 'OPEN_PALM') { openPalmSeen = true; backStartTime = null; backProgress = 0; }
+            if (raw0 === 'OPEN_PALM') { openPalmSeen = true; backStartTime = null; }
             else if (openPalmSeen && raw0 === 'FIST') {
               if (!backStartTime) backStartTime = now;
-              backProgress = Math.min((now - backStartTime) / BACK_HOLD_MS, 1);
               if (now - backStartTime >= BACK_HOLD_MS) {
-                openPalmSeen = false; backStartTime = null; backProgress = 0;
+                openPalmSeen = false; backStartTime = null;
                 onGestureRef.current({ type: 'BACK_DYNAMIC', confidence: 100 });
                 ctx.restore(); return;
               }
-            } else { backProgress = 0; }
+            } else { /* no back */ }
 
             const wristY = hands[0][0].y * H;
 

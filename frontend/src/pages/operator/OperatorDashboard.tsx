@@ -124,26 +124,20 @@ export default function OperatorDashboard() {
 
   );
  
-  // FIXED HERE
-
   const getMappedGesture = (commandId: string, commandName?: string) => {
- 
-    // Force UI display for Check Cards
 
     if (commandName === 'Check Cards') {
 
       return gestures.find(g => g.gestureId === 'G003') ?? null;
 
     }
- 
-    // Force UI display for Check Balance
 
     if (commandName === 'Check Balance') {
 
       return gestures.find(g => g.gestureId === 'G002') ?? null;
 
     }
- 
+
     const m = mappings.find(
 
       m =>
@@ -155,9 +149,9 @@ export default function OperatorDashboard() {
         m.userId === null
 
     );
- 
+
     if (!m) return null;
- 
+
     return gestures.find(g => g.gestureId === m.gestureId) ?? null;
 
   };
@@ -169,7 +163,7 @@ export default function OperatorDashboard() {
       navigate('/operator/balance');
 
     }
- 
+
     if (commandName === 'Check Cards') {
 
       navigate('/operator/cards');
@@ -183,7 +177,7 @@ export default function OperatorDashboard() {
     setExiting(true);
 
     logout();
- 
+
     setTimeout(() => {
 
       navigate('/');
@@ -193,11 +187,9 @@ export default function OperatorDashboard() {
   }, [logout, navigate]);
  
   const handleGesture = useCallback((evt: GestureEvent) => {
- 
-    // Logout confirmation gestures
 
     if (showLogoutConfirm) {
- 
+
       if (evt.type === 'THUMB_UP') {
 
         doLogout();
@@ -205,7 +197,7 @@ export default function OperatorDashboard() {
         return;
 
       }
- 
+
       if (evt.type === 'THUMB_DOWN') {
 
         setShowLogoutConfirm(false);
@@ -213,7 +205,7 @@ export default function OperatorDashboard() {
         return;
 
       }
- 
+
       if (evt.type === 'BACK_DYNAMIC') {
 
         setShowLogoutConfirm(false);
@@ -221,12 +213,10 @@ export default function OperatorDashboard() {
         return;
 
       }
- 
+
       return;
 
     }
- 
-    // Open logout modal
 
     if (evt.type === 'BACK_DYNAMIC') {
 
@@ -235,9 +225,9 @@ export default function OperatorDashboard() {
       return;
 
     }
- 
+
     if (evt.type !== 'GESTURE_ID') return;
- 
+
     switch (evt.id) {
 
       case 'G002':
@@ -253,18 +243,14 @@ export default function OperatorDashboard() {
         break;
 
     }
- 
+
   }, [showLogoutConfirm, doLogout, navigate]);
  
   const cardAccents = ['#059669', '#7c3aed', '#2563eb', '#d97706'];
 
-  const cardBgs = ['#f0fdf4', '#faf5ff', '#eff6ff', '#fffbeb'];
- 
   return (
 <PortalLayout title="SignBank" subtitle="User Profile">
  
-      {/* Logout Confirmation Modal */}
-
       {showLogoutConfirm && (
 <div className="logout-confirm-overlay">
  
@@ -386,13 +372,13 @@ export default function OperatorDashboard() {
  
           <h1>
 
-            Welcome to SignBank, User {userId}
+            Welcome to SignBank, <span>{userId}</span>
 </h1>
  
           <div className="command-cards">
- 
+
             {dashCommands.map((cmd, i) => {
- 
+
               const gesture = getMappedGesture(
 
                 cmd.commandId,
@@ -400,7 +386,9 @@ export default function OperatorDashboard() {
                 cmd.commandName
 
               );
- 
+
+              const accent = cardAccents[i % cardAccents.length];
+
               return (
 <div
 
@@ -408,13 +396,7 @@ export default function OperatorDashboard() {
 
                   className="command-card"
 
-                  style={{
-
-                    background: cardBgs[i % cardBgs.length],
-
-                    borderLeft: `4px solid ${cardAccents[i % cardAccents.length]}`,
-
-                  }}
+                  style={{ borderLeft: `4px solid ${accent}`, '--card-accent': accent + '18' } as React.CSSProperties}
 
                   onClick={() => handleCommandClick(cmd.commandName)}
 >
@@ -423,11 +405,7 @@ export default function OperatorDashboard() {
 
                     className="cmd-dot"
 
-                    style={{
-
-                      background: cardAccents[i % cardAccents.length]
-
-                    }}
+                    style={{ background: accent }}
 
                   />
  
@@ -440,13 +418,7 @@ export default function OperatorDashboard() {
  
                     <div className="cmd-gesture">
 
-                      Gesture:
-<strong>
-
-                        {' '}
-
-                        {gesture?.gestureName || '—'}
-</strong>
+                      Gesture: <strong>{gesture?.gestureName || '—'}</strong>
 </div>
  
                   </div>
@@ -488,4 +460,3 @@ export default function OperatorDashboard() {
   );
 
 }
- 

@@ -8,7 +8,7 @@ import type { CommandMapping } from '../../types';
 import './ManageMappings.css';
 
 export default function ManageMappings() {
-  const { mappings, gestures, commands, pages, roles, refreshMappings } = useData();
+  const { mappings, gestures, commands, pages, refreshMappings } = useData();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'R001' | 'R002'>('R001');
@@ -129,10 +129,7 @@ export default function ManageMappings() {
 
   const roleLabel = activeTab === 'R001' ? 'Operator' : 'Viewer';
 
-  // Commands that are not yet mapped for this role (for the add modal)
-  const unmappedCommandsForRole = commands.filter(
-    c => !roleMappings.some(m => m.commandId === c.commandId && (m.userId === null || m.userId === undefined))
-  );
+
 
   return (
     <AdminLayout>

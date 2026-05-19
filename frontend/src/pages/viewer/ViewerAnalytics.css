@@ -1,13 +1,14 @@
-.viewer-analytics-layout{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
-.analytics-content{flex:1;min-width:280px}
-.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
-.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:18px;text-align:center}
+.viewer-analytics-layout{display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap}
+.analytics-content{flex:1;min-width:300px}
+.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:20px 16px;text-align:center;transition:all var(--t)}
+.mini-stat:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
 .mini-stat.purple{border-top:3px solid var(--primary)}
-.mini-stat.green{border-top:3px solid #34d399}
-.mini-stat.red{border-top:3px solid #f87171}
-.ms-num{font-size:1.3rem;font-weight:800;color:var(--text)}
-.ms-label{font-size:.65rem;color:var(--text3);margin-top:4px}
-.viewer-charts{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px}
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:18px}
-.chart-card h3{font-size:.8rem;font-weight:700;margin-bottom:14px}
-.no-data{text-align:center;color:var(--text3);font-size:.82rem;padding:2rem}
+.mini-stat.green{border-top:3px solid var(--success)}
+.mini-stat.red{border-top:3px solid var(--error)}
+.ms-num{font-size:1.4rem;font-weight:900;color:var(--text);letter-spacing:-.5px}
+.ms-label{font-size:.65rem;color:var(--text3);margin-top:5px;font-weight:600;text-transform:uppercase;letter-spacing:.2px}
+.viewer-charts{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:18px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:20px}
+.chart-card h3{font-size:.82rem;font-weight:700;margin-bottom:16px;color:var(--text2);text-transform:uppercase;letter-spacing:.2px}
+.no-data{text-align:center;color:var(--text3);font-size:.82rem;padding:2.5rem}

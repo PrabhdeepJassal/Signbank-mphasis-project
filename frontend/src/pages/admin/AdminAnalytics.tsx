@@ -102,7 +102,7 @@ export default function AdminAnalytics() {
               {[...logs].reverse().slice(0, 10).map(l => (
                 <tr key={l.interactionId}>
                   <td>{l.interactionId}</td>
-                  <td>{l.userId}</td>
+                  <td>{l.user?.userId ?? '—'}</td>
                   <td>{commands.find(c => c.commandId === l.command?.commandId)?.commandName || l.command?.commandName || '—'}</td>
                   <td>{gestures.find(g => g.gestureId === l.gesture?.gestureId)?.gestureSymbol}</td>
                   <td><span className={`status-badge ${l.status}`}>{l.status}</span></td>

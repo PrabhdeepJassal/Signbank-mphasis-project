@@ -835,7 +835,7 @@ export default function OperatorCardActions() {
               {actions.map(action => (
                 <div
                   key={action.id} className="action-command-card"
-                  style={{ background: action.bg, borderLeft: `4px solid ${action.accent}` }}
+                  style={{ borderLeft: `4px solid ${action.accent}`, '--card-accent': action.accent + '18' } as React.CSSProperties}
                   onClick={action.onClick}
                 >
                   <div className="action-cmd-dot" style={{ background: action.accent }} />
