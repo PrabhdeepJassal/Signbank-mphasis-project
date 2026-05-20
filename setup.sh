@@ -18,6 +18,7 @@ info "Checking prerequisites..."
 check_dep node
 check_dep java
 check_dep psql
+check_dep createdb
 
 NODE_OK=$(node -e "console.log(process.version.slice(1).split('.')[0] >= 18)")
 JAVA_OK=$(java -version 2>&1 | grep -c 'version "21')
@@ -41,10 +42,19 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║          SignBank Enterprise — Setup Complete           ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo "  Make sure PostgreSQL is running with database 'signbank_db'."
+
+# Create database if it doesn't exist
+if psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw signbank_db; then
+  ok "Database 'signbank_db' already exists"
+else
+  info "Creating database 'signbank_db'..."
+  createdb signbank_db 2>/dev/null && ok "Database created" || err "Could not create database — create it manually: createdb signbank_db"
+fi
+
 echo ""
 echo "  Start the backend:"
 echo "    cd backend && ./mvnw spring-boot:run"
+echo "    (Flyway will auto-create tables and seed data on first run)"
 echo ""
 echo "  Start the frontend (in another terminal):"
 echo "    cd frontend && npm run dev"

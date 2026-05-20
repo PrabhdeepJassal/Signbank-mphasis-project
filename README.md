@@ -17,19 +17,21 @@ A gesture-driven smart interaction platform. Users control banking operations th
 # 1. Clone & enter project
 git clone <repo-url> && cd Sign-Bank-Enterprise-mphasis-main
 
-# 2. Create database
+# 2. Create database (only manual DB step)
 createdb signbank_db
 # Or via psql: CREATE DATABASE signbank_db;
 
 # 3. Install frontend deps
 cd frontend && npm install && cd ..
 
-# 4. Build & run backend
+# 4. Build & run backend (Flyway auto-creates tables + seeds data)
 cd backend && ./mvnw spring-boot:run
 
 # 5. In another terminal, start frontend
 cd frontend && npm run dev
 ```
+
+> **Database is fully automatic** — Flyway migrations create all tables and seed demo data on first run. No manual SQL needed after `createdb`.
 
 Open **http://localhost:5173** in a browser with a webcam.
 
@@ -71,7 +73,8 @@ Open **http://localhost:5173** in a browser with a webcam.
 │   │   └── exception/           # Custom exceptions
 │   ├── src/main/resources/
 │   │   ├── application.properties
-│   │   └── db/postgres/         # schema.sql + data.sql
+│   │   ├── db/migration/        # Flyway migrations (schema + seed)
+│   │   └── db/postgres/         # Reference SQL files
 │   ├── pom.xml
 │   └── mvnw                     # Maven wrapper
 │
@@ -104,6 +107,8 @@ Open **http://localhost:5173** in a browser with a webcam.
 createdb signbank_db
 # Or: psql -c "CREATE DATABASE signbank_db;"
 ```
+
+> Tables and seed data are created automatically by Flyway on first backend startup. No manual schema import needed.
 
 **2. Backend:**
 ```bash
@@ -261,4 +266,4 @@ java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
 - **Gesture detection** runs entirely in the browser via MediaPipe Hands (CDN-loaded). The backend receives classified gesture events.
 - **Finger tracking** for the set-limit slider uses OpenCV on the server side (no native install needed — uses `openpnp` Java bindings).
 - **Auth** uses JWT tokens. Admin logs in with username/password. Operators and viewers log in with gesture sequences.
-- **Database** schema is auto-created by Hibernate (`ddl-auto=update`). Seed data is loaded from `data.sql` on startup.
+- **Database** schema and seed data are managed by **Flyway** migrations (`db/migration/`). On a fresh database, Flyway runs `V1__initial_schema.sql` (all tables) then `V2__seed_data.sql` (demo data). Hibernate runs in `validate` mode to ensure entities match the schema.
