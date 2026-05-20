@@ -91,59 +91,65 @@ function drawHoldRing(ctx: CanvasRenderingContext2D, cx: number, cy: number, pct
 
 // drawScrollButtons removed as requested
 
-function drawPinchScrollbar(
+function drawThreeFingerScrollIndicator(
   ctx: CanvasRenderingContext2D,
-  W: number,
+  px: number,
+  py: number,
   H: number,
-  thumbY: number,
-  isLocked: boolean,
-  isHovered: boolean,
-  pointerX?: number,
-  pointerY?: number
+  isUpper: boolean,
+  speedRatio: number
 ) {
   ctx.save();
-
-  // 1. Draw track (Left Side)
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  
+  // 1. Draw horizontal dividing dotted line at the exact center H / 2
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1;
+  ctx.setLineDash([6, 6]);
   ctx.beginPath();
-  ctx.roundRect(10, 30, 8, H - 60, 4);
-  ctx.fill();
+  ctx.moveTo(0, H / 2);
+  ctx.lineTo(640, H / 2);
   ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // 2. Draw neutral deadzone guide bands
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
+  ctx.fillRect(0, (H / 2) - 30, 640, 60);
 
-  // 2. Draw hover target guide
-  if (isHovered && !isLocked) {
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-
-  // 3. Draw thumb handle
-  ctx.shadowBlur = isLocked ? 15 : isHovered ? 8 : 0;
-  ctx.shadowColor = isLocked ? '#a78bfa' : '#38bdf8';
-  const grad = ctx.createLinearGradient(10, thumbY - 15, 18, thumbY + 15);
-  if (isLocked) {
-    grad.addColorStop(0, '#f43f5e');
-    grad.addColorStop(1, '#a78bfa');
-  } else {
-    grad.addColorStop(0, '#38bdf8');
-    grad.addColorStop(1, '#0284c7');
-  }
-  ctx.fillStyle = grad;
+  // 3. Draw active glowing particle circle at pinch center
+  const color = isUpper ? '#38bdf8' : '#ef4444';
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = color;
+  ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.roundRect(8, thumbY - 15, 12, 30, 6);
+  ctx.arc(px, py, 12, 0, Math.PI * 2);
   ctx.fill();
-
-  // 4. Draw labels next to track (to the right of the left track)
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = isLocked ? '#f43f5e' : isHovered ? '#38bdf8' : 'rgba(255, 255, 255, 0.4)';
-  ctx.font = 'bold 9px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(isLocked ? '🔒 DRAGGING' : '🤏 PINCH HERE TO DRAG', 26, thumbY + 3);
-
+  
+  // Draw rotating outer radar ring
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(px, py, 20, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // 4. Draw dynamic motion vectors and direction HUD text
+  ctx.shadowBlur = 10;
+  ctx.font = 'bold 22px system-ui';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  if (isUpper) {
+    ctx.fillText('▲', px, py - 35);
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText(`▲ GLIDING UP (${Math.round(speedRatio * 100)}%)`, px, py + 32);
+  } else {
+    ctx.fillText('▼', px, py + 35);
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText(`▼ GLIDING DOWN (${Math.round(speedRatio * 100)}%)`, px, py - 32);
+  }
+  
   ctx.restore();
 }
 
@@ -186,7 +192,8 @@ export function useGestureControl(
     let isPinchLocked = false;
     let pinchStartY: number | null = null;
     let pinchStartScroll: number | null = null;
-    let targetScrollY = 0;
+    let targetVelocity = 0;
+    let currentVelocity = 0;
     let currentScrollY = 0;
     let cachedScrollContainer: HTMLElement | null = null;
     let smoothedHandY = 0;
@@ -196,8 +203,15 @@ export function useGestureControl(
     let scrollAnimId = 0;
     const smoothScrollLoop = () => {
       if (isPinchLocked && cachedScrollContainer) {
-        // Friction lerp coefficient at native rate (usually 0.85/0.15)
-        currentScrollY = currentScrollY * 0.85 + targetScrollY * 0.15;
+        // Butter-smooth heavy friction dampening for completely jitter-free gliding
+        currentVelocity = currentVelocity * 0.90 + targetVelocity * 0.10;
+        
+        // Deadband: ignore extremely tiny velocity noise
+        if (Math.abs(currentVelocity) < 0.1) {
+          currentVelocity = 0;
+        }
+        
+        currentScrollY = Math.max(0, Math.min(cachedScrollContainer.scrollHeight - window.innerHeight, currentScrollY + currentVelocity));
         
         cachedScrollContainer.scrollTop = currentScrollY;
         if (cachedScrollContainer === document.documentElement || cachedScrollContainer === document.body) {
@@ -449,29 +463,8 @@ export function useGestureControl(
               raw1 = hands.length > 1 ? classifySingleHand(hands[1], handedness[1]?.label ?? 'Left') : 'Unknown';
             }
 
-            // ── GESTURE DEADZONE FOR SCROLLBAR REGION (Left 60px or while active dragging) ──
-            if (hands.length > 0 && hands[0][8]) {
-              const tx = hands[0][8].x * W;
-              if (tx < 60 || isPinchLocked) {
-                if (isPinchLocked) {
-                  raw0 = 'OK';
-                } else if (raw0 !== 'OK') {
-                  raw0 = 'Unknown';
-                }
-                isTwoHandDigit = false;
-              }
-            }
-            if (hands.length > 1 && hands[1][8]) {
-              const tx = hands[1][8].x * W;
-              if (tx < 60 || isPinchLocked) {
-                if (isPinchLocked) {
-                  raw1 = 'OK';
-                } else if (raw1 !== 'OK') {
-                  raw1 = 'Unknown';
-                }
-                isTwoHandDigit = false;
-              }
-            }
+            // ── GESTURE DEADZONE FOR SCROLLBAR REGION (Left 80px or while active dragging) ──
+            // Left scroller muted deadzone removed to give full screen for gestures
 
             // BACK gesture from hand 0 only
             if (raw0 === 'OPEN_PALM') { openPalmSeen = true; backStartTime = null; }
@@ -506,83 +499,90 @@ export function useGestureControl(
               } else { exitSlider(); }
             }
 
-            // Touch-point scroll control using index finger tip & left air-scrollbar
-            let isNearScrollbar = false;
-
-            const activeContainer = cachedScrollContainer || document.documentElement || document.body;
-            const maxScroll = Math.max(100, activeContainer.scrollHeight - window.innerHeight);
-            const currentScroll = activeContainer.scrollTop;
-            const currentPct = Math.max(0, Math.min(1, currentScroll / maxScroll));
-            let thumbY = 30 + currentPct * (H - 60);
+            // ── THREE-FINGER PINCH AUTO-SCROLL PHYSICS ENGINE ──
+            let isThreeFingerPinchActive = false;
+            let pinchCenterX = 0;
+            let pinchCenterY = 0;
 
             if (hands.length > 0) {
-              const tip = hands[0][8];   // Index finger tip landmark
-              const thumb = hands[0][4]; // Thumb tip landmark
-              if (tip && thumb) {
-                const tx = tip.x * W;
-                const ty = tip.y * H;
+              const thumb = hands[0][4];  // Thumb tip landmark
+              const index = hands[0][8];  // Index tip landmark
+              const middle = hands[0][12]; // Middle tip landmark
 
-                // 1. Instant raw pinch check using 3D Euclidean distance (zero recognition latency)
-                const dx = thumb.x - tip.x;
-                const dy = thumb.y - tip.y;
-                const dz = (thumb.z ?? 0) - (tip.z ?? 0);
-                const pinchDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                const isPinchingRaw = pinchDist < 0.048; // Highly sensitive raw pinch threshold
+              if (thumb && index && middle) {
+                // Calculate 3D distances between the three finger tips
+                const d_thumb_index = Math.sqrt(
+                  Math.pow(thumb.x - index.x, 2) +
+                  Math.pow(thumb.y - index.y, 2) +
+                  Math.pow((thumb.z ?? 0) - (index.z ?? 0), 2)
+                );
+                
+                const d_thumb_middle = Math.sqrt(
+                  Math.pow(thumb.x - middle.x, 2) +
+                  Math.pow(thumb.y - middle.y, 2) +
+                  Math.pow((thumb.z ?? 0) - (middle.z ?? 0), 2)
+                );
+                
+                const d_index_middle = Math.sqrt(
+                  Math.pow(index.x - middle.x, 2) +
+                  Math.pow(index.y - middle.y, 2) +
+                  Math.pow((index.z ?? 0) - (middle.z ?? 0), 2)
+                );
 
-                // 2. Check Scrollbar Hover/Drag (Left Side check: tx < 40)
-                if (tx < 40) {
-                  isNearScrollbar = true;
-                }
+                // If all three tips are pinched together like picking something (< 0.052)
+                isThreeFingerPinchActive = d_thumb_index < 0.052 && d_thumb_middle < 0.052 && d_index_middle < 0.052;
 
-                if (isPinchingRaw && (isNearScrollbar || isPinchLocked)) {
+                if (isThreeFingerPinchActive) {
+                  // Calculate average coordinate of pinch
+                  pinchCenterX = ((thumb.x + index.x + middle.x) / 3) * W;
+                  pinchCenterY = ((thumb.y + index.y + middle.y) / 3) * H;
+
+                  // Suppress standard gestures during scrolling
+                  raw0 = 'OK';
+                  isTwoHandDigit = false;
+
                   if (!isPinchLocked) {
                     isPinchLocked = true;
-                    pinchStartY = ty;
-                    smoothedHandY = ty;
-
-                    // Query DOM once on lock state to prevent style recalculation layout thrashing
+                    // Cache DOM scroll container
                     cachedScrollContainer = document.getElementById('portal-content') || 
                                             document.querySelector('.portal-main') as HTMLElement || 
                                             document.documentElement || 
                                             document.body;
 
-                    pinchStartScroll = cachedScrollContainer ? cachedScrollContainer.scrollTop : (window.scrollY || document.documentElement.scrollTop);
-                    currentScrollY = pinchStartScroll;
-                    targetScrollY = pinchStartScroll;
+                    currentScrollY = cachedScrollContainer ? cachedScrollContainer.scrollTop : (window.scrollY || document.documentElement.scrollTop);
+                    targetVelocity = 0;
+                    currentVelocity = 0;
                   }
 
-                  if (pinchStartY !== null && pinchStartScroll !== null) {
-                    // Exponential Moving Average (EMA) to smooth out raw finger tip coordinate jitter/shaking
-                    smoothedHandY = smoothedHandY * 0.65 + ty * 0.35;
-                    const deltaY = smoothedHandY - pinchStartY;
-                    const sensitivity = maxScroll / (H - 60);
-                    targetScrollY = pinchStartScroll + deltaY * sensitivity;
+                  // Neutral dividing line is H / 2
+                  const offset = pinchCenterY - (H / 2);
+                  const DEADZONE = 30; // 30px deadzone around center dividing line
 
-                    // Physical finger gluing with filtered coordinates
-                    thumbY = Math.max(30, Math.min(H - 30, smoothedHandY));
+                  if (Math.abs(offset) < DEADZONE) {
+                    targetVelocity = 0;
+                  } else {
+                    const sign = offset > 0 ? 1 : -1;
+                    const absOffset = Math.abs(offset) - DEADZONE;
+                    
+                    // Comfortable rate-scrolling velocity curve
+                    targetVelocity = sign * Math.min(22, Math.pow(absOffset * 0.12, 1.5));
                   }
-                } else {
-                  isPinchLocked = false;
-                  pinchStartY = null;
-                  pinchStartScroll = null;
                 }
               }
-            } else {
-              isPinchLocked = false;
-              pinchStartY = null;
-              pinchStartScroll = null;
             }
 
-            drawPinchScrollbar(
-              ctx,
-              W,
-              H,
-              thumbY,
-              isPinchLocked,
-              isNearScrollbar,
-              hands[0] ? hands[0][8].x * W : undefined,
-              hands[0] ? hands[0][8].y * H : undefined
-            );
+            if (!isThreeFingerPinchActive) {
+              isPinchLocked = false;
+              targetVelocity = 0;
+              currentVelocity = 0;
+            }
+
+            // Render glowing HUD feedback when three-finger autoscroll is running
+            if (isPinchLocked) {
+              const isUpper = pinchCenterY < H / 2;
+              const speedRatio = Math.min(1, Math.abs(targetVelocity) / 22);
+              drawThreeFingerScrollIndicator(ctx, pinchCenterX, pinchCenterY, H, isUpper, speedRatio);
+            }
 
             if (!inSlider) {
               const handsToProcess = [
