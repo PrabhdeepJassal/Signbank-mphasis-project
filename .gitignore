@@ -11,3 +11,4 @@ target/
 *.swp
 *.swo
 apache-maven-*/
+data/
