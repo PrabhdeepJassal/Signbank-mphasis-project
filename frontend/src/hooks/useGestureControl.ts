@@ -39,11 +39,9 @@ const COOLDOWN_MS = 2200;
 const ROCK_HOLD_MS = 700;
 
 declare const Hands: any;
-declare const FaceDetection: any;
 declare const HAND_CONNECTIONS: any;
 declare const drawConnectors: any;
 declare const drawLandmarks: any;
-declare const cv: any;
 
 const HAND_COLORS = ['#00e676', '#40c4ff'];
 const HAND_LABELS = ['Right', 'Left'];
@@ -54,9 +52,7 @@ function calcConfidence(buffer: string[], current: string): number {
   return Math.round((matching / buffer.length) * 100);
 }
 
-function isCVReady(): boolean {
-  try { return typeof cv !== 'undefined' && !!cv.Mat; } catch (_) { return false; }
-}
+
 
 function drawSlider(ctx: CanvasRenderingContext2D, normX: number, _wristYpx: number, W: number, H: number, _rawX: number, _smoothX: number) {
   const PAD = 50, left = PAD, right = W - PAD, trackY = H - 60, thumbX = left + normX * (right - left);
@@ -190,15 +186,10 @@ export function useGestureControl(
     const ALPHA = 0.2, VEL_DECAY = 0.8, VEL_WEIGHT = 0.2;
     let frameCount = 0;
     let isPinchLocked = false;
-    let pinchStartY: number | null = null;
-    let pinchStartScroll: number | null = null;
     let targetVelocity = 0;
     let currentVelocity = 0;
     let currentScrollY = 0;
     let cachedScrollContainer: HTMLElement | null = null;
-    let smoothedHandY = 0;
-    let faceDetectionInst: any = null;
-
     // High-refresh-rate smooth scroll rendering thread (RAF)
     let scrollAnimId = 0;
     const smoothScrollLoop = () => {
@@ -278,133 +269,24 @@ export function useGestureControl(
 
     const init = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        // Start camera and wait for MediaPipe Hands CDN script in parallel
+        const [camStream] = await Promise.all([
+          navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }),
+          new Promise<void>(res => { const poll = () => (typeof Hands !== 'undefined' ? res() : setTimeout(poll, 100)); poll(); }),
+        ]);
+        if (cancelled) { camStream.getTracks().forEach(t => t.stop()); return; }
+        stream = camStream;
         const video = videoRef.current!;
         video.srcObject = stream; await video.play();
         await new Promise<void>(res => { const poll = () => (video.videoWidth > 0 ? res() : setTimeout(poll, 80)); poll(); });
-        if (cancelled) return;
-        await new Promise<void>(res => { const poll = () => (typeof Hands !== 'undefined' ? res() : setTimeout(poll, 100)); poll(); });
         if (cancelled) return;
 
         handsInst = new Hands({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
         handsInst.setOptions({
           maxNumHands: 2,
-          modelComplexity: 1,
+          modelComplexity: 0,
           minDetectionConfidence: 0.75,
           minTrackingConfidence: 0.7,
-        });
-
-        // Initialize FaceDetection for anti-peeking security (does not highlight/draw anything)
-        await new Promise<void>(res => { const poll = () => (typeof FaceDetection !== 'undefined' ? res() : setTimeout(poll, 100)); poll(); });
-        if (cancelled) return;
-
-        faceDetectionInst = new FaceDetection({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}` });
-        faceDetectionInst.setOptions({
-          model: 'short', // optimized for close-range/selfie cameras
-          minDetectionConfidence: 0.65
-        });
-
-        faceDetectionInst.onResults((results: any) => {
-          if (cancelled) return;
-          const faces = results.detections ?? [];
-          const faceCount = faces.length;
-
-          if (faceCount > 1) {
-            // PEER SECURITY VIOLATION: Show warning overlay and lock screen
-            let overlay = document.getElementById('peeking-warning-overlay');
-            if (!overlay) {
-              overlay = document.createElement('div');
-              overlay.id = 'peeking-warning-overlay';
-              overlay.innerHTML = `
-                <div class="peeking-content">
-                  <div class="peeking-icon">⚠️</div>
-                  <h1>SECURITY ALERT</h1>
-                  <p>SCREEN PEEKING DETECTED!</p>
-                  <div class="peeking-sub">SignBank Enterprise has locked the screen to protect your security. Please ask the peeking person to step away.</div>
-                </div>
-              `;
-              overlay.setAttribute('style', `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: rgba(10, 15, 30, 0.98);
-                backdrop-filter: blur(25px);
-                z-index: 999999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #fff;
-                font-family: system-ui, -apple-system, sans-serif;
-                text-align: center;
-                transition: opacity 0.3s ease;
-                opacity: 0;
-              `);
-              
-              const styleEl = document.createElement('style');
-              styleEl.id = 'peeking-warning-styles';
-              styleEl.innerHTML = `
-                #peeking-warning-overlay .peeking-content {
-                  max-width: 500px;
-                  padding: 40px;
-                  border: 2px solid #ef4444;
-                  border-radius: 24px;
-                  background: rgba(239, 68, 68, 0.05);
-                  box-shadow: 0 0 50px rgba(239, 68, 68, 0.3);
-                  animation: peekingPulse 2s infinite alternate;
-                }
-                #peeking-warning-overlay .peeking-icon {
-                  font-size: 72px;
-                  margin-bottom: 16px;
-                  display: inline-block;
-                  animation: peekingShake 0.5s infinite;
-                }
-                #peeking-warning-overlay h1 {
-                  font-size: 32px;
-                  color: #ef4444;
-                  font-weight: 800;
-                  margin: 0 0 8px 0;
-                  letter-spacing: 2px;
-                }
-                #peeking-warning-overlay p {
-                  font-size: 20px;
-                  font-weight: 600;
-                  margin: 0 0 20px 0;
-                  color: #f8fafc;
-                }
-                #peeking-warning-overlay .peeking-sub {
-                  font-size: 14px;
-                  line-height: 1.6;
-                  color: #94a3b8;
-                }
-                @keyframes peekingPulse {
-                  from { box-shadow: 0 0 30px rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
-                  to { box-shadow: 0 0 60px rgba(239, 68, 68, 0.6); border-color: rgba(239, 68, 68, 1); }
-                }
-                @keyframes peekingShake {
-                  0%, 100% { transform: rotate(0); }
-                  25% { transform: rotate(-8deg); }
-                  75% { transform: rotate(8deg); }
-                }
-              `;
-              document.head.appendChild(styleEl);
-              document.body.appendChild(overlay);
-              overlay.offsetHeight; // Force reflow
-              overlay.style.opacity = '1';
-            }
-          } else {
-            // Normal state: remove warning overlay
-            const overlay = document.getElementById('peeking-warning-overlay');
-            if (overlay) {
-              overlay.style.opacity = '0';
-              setTimeout(() => {
-                overlay.remove();
-                document.getElementById('peeking-warning-styles')?.remove();
-              }, 300);
-            }
-          }
         });
 
         handsInst.onResults((results: any) => {
@@ -415,13 +297,6 @@ export function useGestureControl(
           canvas.width = W; canvas.height = H;
           const ctx = canvas.getContext('2d')!;
           ctx.save(); ctx.clearRect(0, 0, W, H); ctx.drawImage(video, 0, 0, W, H);
-
-          const cvAvailable = isCVReady();
-          if (cvAvailable) {
-            let src: any = null, blurred: any = null;
-            try { src = cv.imread(canvas); blurred = new cv.Mat(); cv.GaussianBlur(src, blurred, new cv.Size(5, 5), 0); cv.imshow(canvas, blurred); }
-            catch (_) { } finally { src?.delete(); blurred?.delete(); }
-          }
 
           const hands = results.multiHandLandmarks ?? [];
           const handedness = results.multiHandedness ?? [];
@@ -626,20 +501,11 @@ export function useGestureControl(
           if (cancelled) return;
           const v = videoRef.current;
           if (v && !v.paused && v.readyState >= 2) {
-            try {
-              await Promise.all([
-                handsInst.send({ image: v }),
-                faceDetectionInst.send({ image: v })
-              ]);
-            } catch (_) { }
+            try { await handsInst.send({ image: v }); } catch (_) { }
           }
           animId = requestAnimationFrame(loop);
         };
         animId = requestAnimationFrame(loop);
-
-        const cvCheckInterval = setInterval(() => {
-          if (isCVReady()) { clearInterval(cvCheckInterval); }
-        }, 500);
 
       } catch (err) { console.error('[GestureControl] Init error:', err); }
     };
@@ -651,9 +517,6 @@ export function useGestureControl(
       cancelAnimationFrame(scrollAnimId);
       stream?.getTracks().forEach(t => t.stop());
       handsInst?.close?.();
-      faceDetectionInst?.close?.();
-      document.getElementById('peeking-warning-overlay')?.remove();
-      document.getElementById('peeking-warning-styles')?.remove();
     };
   }, []);
 }

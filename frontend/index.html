@@ -6,18 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SignBank Enterprise — Gesture-Driven Banking Platform</title>
 
-    <!-- MediaPipe Hands (gesture classification) -->
+    <!-- MediaPipe Hands (gesture classification) — loaded async so they don't block page render -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
-
-    <!-- OpenCV.js (hand-position tracking for slider mode) -->
-    <script async src="https://docs.opencv.org/4.x/opencv.js"
-      onload="window._opencvReady = true;"
-      onerror="console.warn('OpenCV.js failed to load — slider will fall back to MediaPipe X')">
-    </script>
   </head>
   <body>
     <div id="root"></div>
