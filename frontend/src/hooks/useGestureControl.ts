@@ -39,6 +39,7 @@ const COOLDOWN_MS = 2200;
 const ROCK_HOLD_MS = 700;
 
 declare const Hands: any;
+declare const FaceDetection: any;
 declare const HAND_CONNECTIONS: any;
 declare const drawConnectors: any;
 declare const drawLandmarks: any;
@@ -190,6 +191,7 @@ export function useGestureControl(
     let currentVelocity = 0;
     let currentScrollY = 0;
     let cachedScrollContainer: HTMLElement | null = null;
+    let faceDetectionInst: any = null;
     // High-refresh-rate smooth scroll rendering thread (RAF)
     let scrollAnimId = 0;
     const smoothScrollLoop = () => {
@@ -288,6 +290,36 @@ export function useGestureControl(
           minDetectionConfidence: 0.75,
           minTrackingConfidence: 0.7,
         });
+
+        // Lazy FaceDetection init — doesn't block startup, initializes in background
+        let faceDetectionReady = false;
+        const initFaceDetection = async () => {
+          while (typeof FaceDetection === 'undefined') await new Promise(r => setTimeout(r, 200));
+          if (cancelled) return;
+          const inst = new FaceDetection({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}` });
+          inst.setOptions({ model: 'short', minDetectionConfidence: 0.65 });
+          inst.onResults((results: any) => {
+            if (cancelled) return;
+            const faces = results.detections ?? [];
+            if (faces.length > 1) {
+              let overlay = document.getElementById('peeking-warning-overlay');
+              if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'peeking-warning-overlay';
+                overlay.innerHTML = `<div class="peeking-content"><div class="peeking-icon">⚠️</div><h1>SECURITY ALERT</h1><p>SCREEN PEEKING DETECTED!</p><div class="peeking-sub">SignBank Enterprise has locked the screen to protect your security.</div></div>`;
+                overlay.setAttribute('style', 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(10,15,30,0.98);backdrop-filter:blur(25px);z-index:999999;display:flex;align-items:center;justify-content:center;color:#fff;font-family:system-ui,sans-serif;text-align:center;transition:opacity .3s ease;opacity:0');
+                document.body.appendChild(overlay);
+                requestAnimationFrame(() => { overlay!.style.opacity = '1'; });
+              }
+            } else {
+              const overlay = document.getElementById('peeking-warning-overlay');
+              if (overlay) { overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 300); }
+            }
+          });
+          faceDetectionInst = inst;
+          faceDetectionReady = true;
+        };
+        initFaceDetection();
 
         handsInst.onResults((results: any) => {
           if (cancelled) return;
@@ -497,11 +529,16 @@ export function useGestureControl(
           ctx.restore();
         });
 
+        let faceFrameSkip = 0;
         const loop = async () => {
           if (cancelled) return;
           const v = videoRef.current;
           if (v && !v.paused && v.readyState >= 2) {
             try { await handsInst.send({ image: v }); } catch (_) { }
+            faceFrameSkip++;
+            if (faceFrameSkip % 30 === 0 && faceDetectionReady && faceDetectionInst) {
+              try { faceDetectionInst.send({ image: v }); } catch (_) { }
+            }
           }
           animId = requestAnimationFrame(loop);
         };
@@ -517,6 +554,8 @@ export function useGestureControl(
       cancelAnimationFrame(scrollAnimId);
       stream?.getTracks().forEach(t => t.stop());
       handsInst?.close?.();
+      faceDetectionInst?.close?.();
+      document.getElementById('peeking-warning-overlay')?.remove();
     };
   }, []);
 }
