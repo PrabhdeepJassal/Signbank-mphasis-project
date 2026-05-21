@@ -3,9 +3,7 @@ package com.signbank.backend.dto.request;
 /**
  * DTO for creating or updating a user from the Admin panel.
  *
- * passwordHash field is named "passwordHash" in JSON but actually carries
- * the RAW password string — AdminService will hash it before storing.
- * This keeps the existing field name compatible with the frontend.
+ * passwordHash field carries the raw password string stored as plaintext.
  */
 public class UserCreateRequest {
 
@@ -14,11 +12,7 @@ public class UserCreateRequest {
     private String email;
     private String roleId;
 
-    /**
-     * Raw password supplied by admin.
-     * AdminService.createUser() / updateUser() will call
-     * passwordEncoder.encode(passwordHash) before saving to DB.
-     */
+    /** Raw plaintext password supplied by admin. Stored as-is. */
     private String passwordHash;
 
     /** Gesture hash for biometric login (optional) */

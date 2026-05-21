@@ -14,13 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     gesture_hash VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_users_role
-        FOREIGN KEY (role_id) REFERENCES roles(role_id),
-    -- Admin uses password only, Operator/Viewer use gesture only
-    CONSTRAINT chk_users_auth_by_role
-        CHECK (
-            (role_id = 'R000' AND password_hash IS NOT NULL AND gesture_hash IS NULL) OR
-            (role_id IN ('R001', 'R002') AND password_hash IS NULL AND gesture_hash IS NOT NULL)
-        )
+        FOREIGN KEY (role_id) REFERENCES roles(role_id)
 );
 
 CREATE TABLE IF NOT EXISTS gestures (

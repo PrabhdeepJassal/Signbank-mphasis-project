@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS roles (
     role_name VARCHAR(50) NOT NULL UNIQUE
 );
 
+-- Passwords stored as plaintext (not hashed/encrypted) per project requirements
 CREATE TABLE IF NOT EXISTS users (
     user_id VARCHAR(20) PRIMARY KEY,
     role_id VARCHAR(10) NOT NULL,
@@ -12,12 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     gesture_hash VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_users_role
-        FOREIGN KEY (role_id) REFERENCES roles(role_id),
-    CONSTRAINT chk_users_auth_by_role
-        CHECK (
-            (role_id = 'R000' AND password_hash IS NOT NULL AND gesture_hash IS NULL) OR
-            (role_id IN ('R001', 'R002') AND password_hash IS NULL AND gesture_hash IS NOT NULL)
-        )
+        FOREIGN KEY (role_id) REFERENCES roles(role_id)
 );
 
 CREATE TABLE IF NOT EXISTS gestures (

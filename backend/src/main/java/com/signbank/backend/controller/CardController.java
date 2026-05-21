@@ -7,7 +7,6 @@ import com.signbank.backend.repository.UserRepository;
 import com.signbank.backend.service.CardService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -20,16 +19,13 @@ public class CardController {
 
     private final CardService     cardService;
     private final UserRepository  userRepo;
-    private final PasswordEncoder passwordEncoder;
 
     public CardController(
             CardService     cardService,
-            UserRepository  userRepo,
-            PasswordEncoder passwordEncoder
+            UserRepository  userRepo
     ) {
         this.cardService     = cardService;
         this.userRepo        = userRepo;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
@@ -89,30 +85,15 @@ public class CardController {
         System.out.printf("[CardController] found user: userId=%s username=%s%n",
                 user.getUserId(), user.getUsername());
 
-        final String storedHash = user.getPasswordHash();
+        final String stored = user.getPasswordHash();
 
-        System.out.printf("[CardController] storedHash: isNull=%b isBcrypt=%b%n",
-                storedHash == null,
-                storedHash != null && (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$")));
-
-        if (storedHash == null || storedHash.isBlank()) {
+        if (stored == null || stored.isBlank()) {
             System.out.println("[CardController] REJECTED: password_hash is NULL in DB - user never set password");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "No gesture password set for this user. Please log out and log in again to set one.");
         }
 
-        boolean valid;
-        if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$")) {
-            valid = passwordEncoder.matches(credential, storedHash);
-        } else {
-            valid = storedHash.equals(credential);
-            if (valid) {
-                user.setPasswordHash(passwordEncoder.encode(credential));
-                userRepo.save(user);
-            }
-        }
-
-        if (!valid) {
+        if (!stored.equals(credential)) {
             System.out.printf("[CardController] REJECTED: wrong credential for user=%s%n", username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "Wrong gesture password. Use the same gestures you used to log in.");

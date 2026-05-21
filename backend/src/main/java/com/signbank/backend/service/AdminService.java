@@ -6,7 +6,6 @@ import com.signbank.backend.entity.*;
 import com.signbank.backend.mapper.AdminMapper;
 import com.signbank.backend.repository.*;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +21,8 @@ public class AdminService {
     private final PageRepository           pageRepo;
     private final CommandRepository        commandRepo;
     private final CommandMappingRepository mappingRepo;
-    private final PasswordEncoder          passwordEncoder;
 
     // ── Default password for newly created users ──────────────────────────────
-    // Users will log in with this password on first login, then they can change it.
     private static final String DEFAULT_PASSWORD = "DEFAULT";
 
     public AdminService(RoleRepository roleRepo,
@@ -33,15 +30,13 @@ public class AdminService {
                         GestureRepository gestureRepo,
                         PageRepository pageRepo,
                         CommandRepository commandRepo,
-                        CommandMappingRepository mappingRepo,
-                        PasswordEncoder passwordEncoder) {
+                        CommandMappingRepository mappingRepo) {
         this.roleRepo        = roleRepo;
         this.userRepo        = userRepo;
         this.gestureRepo     = gestureRepo;
         this.pageRepo        = pageRepo;
         this.commandRepo     = commandRepo;
         this.mappingRepo     = mappingRepo;
-        this.passwordEncoder = passwordEncoder;
     }
 
     // ── Sequential ID generators ──────────────────────────────────────────────
@@ -117,12 +112,11 @@ public class AdminService {
         user.setRole(role);
         user.setCreatedAt(java.time.LocalDateTime.now());
 
-        // ── Set password ──────────────────────────────────────────────────────
-        // Priority: custom password from request → default "DEFAULT"
+        // ── Set password (plaintext) ──────────────────────────────────────────
         String rawPassword = (request.getPasswordHash() != null && !request.getPasswordHash().isBlank())
                 ? request.getPasswordHash()
                 : DEFAULT_PASSWORD;
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setPasswordHash(rawPassword);
 
         // gesture hash only if provided
         user.setGestureHash(request.getGestureHash());
@@ -143,7 +137,7 @@ public class AdminService {
 
         // If admin provides a new password when editing, update it
         if (request.getPasswordHash() != null && !request.getPasswordHash().isBlank()) {
-            user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+            user.setPasswordHash(request.getPasswordHash());
         }
 
         return AdminMapper.toUserResponse(userRepo.save(user));

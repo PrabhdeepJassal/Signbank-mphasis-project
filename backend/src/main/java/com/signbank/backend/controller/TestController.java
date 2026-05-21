@@ -55,17 +55,13 @@ public class TestController {
 
         String hash = user.getPasswordHash();
         result.put("passwordHashIsNull",   hash == null);
-        result.put("passwordHashIsBcrypt",
-                hash != null && (hash.startsWith("$2a$") || hash.startsWith("$2b$")));
         result.put("passwordHashPrefix",
                 hash != null && hash.length() > 10 ? hash.substring(0, 10) + "..." : hash);
 
         if (hash == null) {
             result.put("diagnosis", "NULL - set-password was never saved to DB. User needs to go through first-login flow again.");
-        } else if (hash.startsWith("$2a$") || hash.startsWith("$2b$")) {
-            result.put("diagnosis", "BCrypt hash present - validateCredential should work. Problem is in frontend error handling.");
         } else {
-            result.put("diagnosis", "Plain-text stored (legacy).");
+            result.put("diagnosis", "Plain-text password stored.");
         }
 
         return result;
