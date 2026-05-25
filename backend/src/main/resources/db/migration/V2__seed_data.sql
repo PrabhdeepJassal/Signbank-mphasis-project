@@ -19,10 +19,10 @@ ON CONFLICT (gesture_id) DO NOTHING;
 -- All passwords stored as plaintext (not hashed/encrypted) per project requirements
 INSERT INTO users (user_id, username, password_hash, email, gesture_hash, role_id, created_at) VALUES
 ('U000', 'admin', 'admin123', 'admin@signbank.com', NULL, 'R000', '2024-01-01T00:00:00Z'),
-('1111', '1111', 'G001+G002+G003', 'operator1@signbank.com', 'G001+G002+G003', 'R001', '2024-01-02T00:00:00Z'),
+('1111', '1111', 'G001-G002-G003', 'operator1@signbank.com', 'G001-G002-G003', 'R001', '2024-01-02T00:00:00Z'),
 ('1212', '1212', 'G005', 'operator2@signbank.com', 'G005', 'R001', '2024-01-03T00:00:00Z'),
-('2111', '2111', 'G001+G002+G001', 'viewer1@signbank.com', 'G001+G002+G001', 'R002', '2024-01-04T00:00:00Z'),
-('2212', '2212', 'G003+G004+G005', 'viewer2@signbank.com', 'G003+G004+G005', 'R002', '2024-01-05T00:00:00Z')
+('2111', '2111', 'G001-G002-G001', 'viewer1@signbank.com', 'G001-G002-G001', 'R002', '2024-01-04T00:00:00Z'),
+('2212', '2212', 'G003-G004-G005', 'viewer2@signbank.com', 'G003-G004-G005', 'R002', '2024-01-05T00:00:00Z')
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO pages (page_id, page_name, role_id) VALUES

@@ -5,6 +5,7 @@ import { fetchLogs } from '../../api/logsApi';
 import { useData } from '../../context/DataContext';
 import type { InteractionLog } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
+import './ManageTable.css';
 import './AdminAnalytics.css';
 
 const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
