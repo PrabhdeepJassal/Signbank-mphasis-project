@@ -4,34 +4,30 @@ A gesture-driven smart interaction platform. Users control banking operations th
 
 - **Frontend:** React 19 + TypeScript + Vite
 - **Backend:** Spring Boot 4.0 + Java 21
-- **Database:** PostgreSQL 16
+- **Database:** H2 (file-based, default) / PostgreSQL 16 (optional)
 - **Gesture Detection:** MediaPipe Hands (browser) + OpenCV (server-side finger tracking)
 
 ---
 
 ## Quick Start (5 minutes)
 
-**Prerequisites:** Node.js >= 18, Java 21 JDK, PostgreSQL 16 running locally.
+**Prerequisites:** Node.js >= 18, Java 21 JDK. No database install needed (uses H2 by default).
 
 ```bash
 # 1. Clone & enter project
 git clone <repo-url> && cd Sign-Bank-Enterprise-mphasis-main
 
-# 2. Create database (only manual DB step)
-createdb signbank_db
-# Or via psql: CREATE DATABASE signbank_db;
-
-# 3. Install frontend deps
+# 2. Install frontend deps
 cd frontend && npm install && cd ..
 
-# 4. Build & run backend (Flyway auto-creates tables + seeds data)
+# 3. Build & run backend (auto-creates tables + seeds demo data)
 cd backend && ./mvnw spring-boot:run
 
-# 5. In another terminal, start frontend
+# 4. In another terminal, start frontend
 cd frontend && npm run dev
 ```
 
-> **Database is fully automatic** — Flyway migrations create all tables and seed demo data on first run. No manual SQL needed after `createdb`.
+> **Database is fully automatic** — Uses H2 file-based DB (stored in `backend/data/signbankdb.mv.db`). Tables and demo data are created on first run. No PostgreSQL needed. To reset, delete the `backend/data/` folder and restart.
 
 Open **http://localhost:5173** in a browser with a webcam.
 
@@ -90,7 +86,6 @@ Open **http://localhost:5173** in a browser with a webcam.
 |------------|-----------|----------------------|
 | Node.js    | >= 18     | `node --version`     |
 | Java       | 21 (JDK)  | `java --version`     |
-| PostgreSQL | 16        | `psql --version`     |
 | npm        | >= 9      | `npm --version`      |
 
 > **No Maven install needed** — the project ships with the Maven wrapper (`mvnw`).
@@ -99,32 +94,34 @@ Open **http://localhost:5173** in a browser with a webcam.
 
 ## Setup Options
 
-### Option A: Local Development (recommended)
+### Option A: Local Development (recommended — H2)
 
-**1. Database** — Ensure PostgreSQL 16 is running and create the database:
+No database setup needed. The default profile uses an embedded H2 database stored in `backend/data/`.
 
-```bash
-createdb signbank_db
-# Or: psql -c "CREATE DATABASE signbank_db;"
-```
-
-> Tables and seed data are created automatically by Flyway on first backend startup. No manual schema import needed.
-
-**2. Backend:**
+**1. Backend:**
 ```bash
 cd backend
-cp src/main/resources/application.properties src/main/resources/application-local.properties
-# Edit application-local.properties if your DB credentials differ
 ./mvnw spring-boot:run
 # Runs on http://localhost:8080
+# DB file: backend/data/signbankdb.mv.db (auto-created)
 ```
 
-**3. Frontend** (new terminal):
+**2. Frontend** (new terminal):
 ```bash
 cd frontend
 npm install
 npm run dev
 # Runs on http://localhost:5173
+```
+
+### Option A2: PostgreSQL (optional)
+
+If you prefer PostgreSQL, ensure it's running and use the `postgres` profile:
+
+```bash
+createdb signbank_db
+cd backend
+./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
 ```
 
 ### Option B: Automated Script
@@ -142,10 +139,10 @@ This checks prerequisites, installs deps, builds the backend, and prints instruc
 | User ID | Role     | Login Method      | Credentials                          |
 |---------|----------|-------------------|--------------------------------------|
 | admin   | Admin    | Username/password | Username: `admin`, Password: `admin123` |
-| 1111    | Operator | Gesture password  | G001 + G002 + G003 (1, 2, 3 fingers) |
-| 1212    | Operator | Gesture password  | G005 (Open Palm)                     |
-| 2111    | Viewer   | Gesture password  | G001 + G002 + G001                   |
-| 2212    | Viewer   | Gesture password  | G003 + G004 + G005                   |
+| 1111    | Operator | Gesture password  | G001-G002-G003 (One → Two → Three Fingers) |
+| 1212    | Operator | Gesture password  | G005 (Open Palm)                          |
+| 2111    | Viewer   | Gesture password  | G001-G002-G001                            |
+| 2212    | Viewer   | Gesture password  | G003-G004-G005                            |
 
 ### Gesture ID Reference
 
@@ -228,13 +225,14 @@ All endpoints are under `http://localhost:8080/api/`.
 
 | Variable       | Default          | Description              |
 |----------------|------------------|--------------------------|
-| `DB_HOST`      | `localhost`      | PostgreSQL host          |
-| `DB_PORT`      | `5432`           | PostgreSQL port          |
-| `DB_NAME`      | `signbank_db`    | Database name            |
-| `DB_USER`      | `postgres`       | Database user            |
-| `DB_PASSWORD`  | `postgres`       | Database password        |
 | `PORT`         | `8080`           | Backend server port      |
 | `VITE_API_URL` | `http://localhost:8080` | Backend URL (frontend) |
+| `SPRING_PROFILES_ACTIVE` | *(unset)* | Set to `postgres` for PostgreSQL mode |
+| `DB_HOST`      | `localhost`      | PostgreSQL host (postgres profile) |
+| `DB_PORT`      | `5432`           | PostgreSQL port (postgres profile) |
+| `DB_NAME`      | `signbank_db`    | Database name (postgres profile) |
+| `DB_USER`      | `postgres`       | Database user (postgres profile) |
+| `DB_PASSWORD`  | `postgres`       | Database password (postgres profile) |
 
 ---
 
@@ -266,4 +264,6 @@ java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
 - **Gesture detection** runs entirely in the browser via MediaPipe Hands (CDN-loaded). The backend receives classified gesture events.
 - **Finger tracking** for the set-limit slider uses OpenCV on the server side (no native install needed — uses `openpnp` Java bindings).
 - **Auth** uses JWT tokens. Admin logs in with username/password. Operators and viewers log in with gesture sequences.
-- **Database** schema and seed data are managed by **Flyway** migrations (`db/migration/`). On a fresh database, Flyway runs `V1__initial_schema.sql` (all tables) then `V2__seed_data.sql` (demo data). Hibernate runs in `validate` mode to ensure entities match the schema.
+- **Database** defaults to **H2** (file-based, zero setup). A `postgres` Spring profile switches to PostgreSQL 16. Schema and seed data are managed by **Flyway** migrations + a `data.sql` that re-runs on every startup (safe upsert via `MERGE INTO`).
+- **Gesture passwords** are gesture-ID sequences joined with hyphens (e.g. `G001-G002-G003`). When entering via camera, perform the gestures in order and confirm with Thumbs Up.
+- **Reset database**: delete `backend/data/signbankdb.mv.db` (and `.trace.db`) and restart the backend. All tables and demo data will be recreated.
