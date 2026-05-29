@@ -4,6 +4,7 @@ import {
   type GestureEvent,
   type HandData,
 } from '../../hooks/useGestureControl';
+import { playGestureTap, playGestureConfirm, playGestureCancel, playGestureNav } from '../../utils/sound';
 import './GestureCamera.css';
 
 interface Props {
@@ -39,6 +40,12 @@ export default function GestureCamera({
           evt.type;
         const hand = 'hand' in evt ? (evt as any).hand ?? 0 : 0;
         setLastGestures(prev => hand === 0 ? { ...prev, h0: label } : { ...prev, h1: label });
+
+        // Play contextual sounds
+        if (evt.type === 'THUMB_UP') playGestureConfirm();
+        else if (evt.type === 'THUMB_DOWN') playGestureCancel();
+        else if (evt.type === 'GESTURE_ID') playGestureNav();
+        else if (evt.type === 'DIGIT' || evt.type === 'FIST' || evt.type === 'OPEN_PALM') playGestureTap();
       }
       setActive(true);
       onGesture?.(evt);

@@ -1,0 +1,338 @@
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  animation: onbFadeIn 0.4s ease forwards;
+}
+
+@keyframes onbFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.onboarding-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 700px;
+  animation: onbSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes onbSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.onboarding-header {
+  padding: 20px 24px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+
+.onboarding-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.onboarding-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.onboarding-title-row h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.onboarding-sub {
+  font-size: 0.78rem;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+.onboarding-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.onboarding-progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.onboarding-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-progress-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text3);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Camera area */
+.onboarding-camera-area {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.onboarding-camera-frame {
+  flex: 0 0 420px;
+  height: 360px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.onboarding-live-feed {
+  position: absolute;
+  inset: 0;
+}
+
+.onboarding-live-feed > * {
+  width: 100%;
+  height: 100%;
+}
+
+.onboarding-live-feed .gesture-camera {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  gap: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.onboarding-live-feed .camera-header,
+.onboarding-live-feed .camera-prompt,
+.onboarding-live-feed .ai-status {
+  display: none !important;
+}
+
+.onboarding-live-feed .camera-feed {
+  border-radius: 0 !important;
+  aspect-ratio: unset !important;
+  height: 100% !important;
+  width: 100% !important;
+  flex: 1 !important;
+}
+
+.onboarding-ar-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Feedback overlays */
+.onboarding-feedback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  animation: onbFeedbackPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes onbFeedbackPop {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.correct-feedback {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.incorrect-feedback {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+}
+
+.feedback-icon {
+  font-size: 3rem;
+}
+
+/* Steps list */
+.onboarding-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+  justify-content: flex-start;
+}
+
+.onboarding-steps-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.onboarding-steps-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.onboarding-steps-list::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 99px;
+}
+
+.onboarding-step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.onboarding-step-item.active {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.1);
+}
+
+.onboarding-step-item.done {
+  background: rgba(16, 185, 129, 0.06);
+  opacity: 0.6;
+}
+
+.osi-status {
+  font-size: 0.7rem;
+  font-weight: 800;
+  width: 16px;
+  text-align: center;
+  color: var(--text3);
+}
+
+.onboarding-step-item.active .osi-status {
+  color: var(--primary-light);
+}
+
+.onboarding-step-item.done .osi-status {
+  color: var(--success);
+}
+
+.osi-emoji {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.osi-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.onboarding-step-item.active .osi-label {
+  color: #fff;
+}
+
+/* Footer */
+.onboarding-footer {
+  padding: 16px 20px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.onboarding-footer-hint {
+  font-size: 0.72rem;
+  color: var(--text3);
+  line-height: 1.4;
+}
+
+.onboarding-footer-hint strong {
+  color: var(--text);
+}
+
+.onboarding-skip-btn {
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.12);
+  color: var(--error);
+  padding: 8px 20px;
+  border-radius: var(--r-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.onboarding-skip-btn:hover {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.25);
+  color: #ff4d6d;
+}
+
+@media (max-width: 600px) {
+  .onboarding-overlay {
+    padding: 12px;
+  }
+
+  .onboarding-camera-area {
+    flex-direction: column;
+  }
+
+  .onboarding-steps-list {
+    flex-direction: row;
+    overflow-x: auto;
+    min-width: auto;
+    padding: 4px 0;
+  }
+
+  .onboarding-step-item {
+    flex-direction: column;
+    padding: 8px 12px;
+    min-width: 70px;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .onboarding-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+
+}

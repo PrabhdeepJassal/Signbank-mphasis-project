@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GestureCamera from '../../components/GestureCamera/GestureCamera';
 import { useGlobalGestureNav } from '../../hooks/useGlobalGestureNav';
+import OnboardingTutorial, { type OnboardingHandle } from '../../components/ARGuide/OnboardingTutorial';
+import type { GestureEvent } from '../../hooks/useGestureControl';
 import './Landing.css';
 
 const roles = [
@@ -43,6 +45,11 @@ export default function Landing() {
     'SYSTEM: Initializing SignBank Secure Shell...',
     'MEDIA_PIPE: Loading camera tracking nodes...',
   ]);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialDone, setTutorialDone] = useState(
+    () => localStorage.getItem('sb_onboarding_done') === 'true'
+  );
+  const tutorialRef = useRef<OnboardingHandle>(null);
 
   // Simulate a live retro terminal stream on the HUD
   useEffect(() => {
@@ -72,6 +79,25 @@ export default function Landing() {
   ];
 
   const { handleGesture } = useGlobalGestureNav({ buttons });
+
+  const handleNormalGesture = useCallback((evt: GestureEvent) => {
+    handleGesture(evt);
+  }, [handleGesture]);
+
+  const handleTutorialGesture = useCallback((evt: GestureEvent) => {
+    tutorialRef.current?.reportGesture(evt);
+  }, []);
+
+  const handleTutorialDismiss = useCallback(() => {
+    setShowTutorial(false);
+    setTutorialDone(true);
+    localStorage.setItem('sb_onboarding_done', 'true');
+  }, []);
+
+  const handleTutorialShow = useCallback(() => {
+    setShowTutorial(true);
+    setTutorialDone(false);
+  }, []);
 
   return (
     <div className="landing-cockpit" role="main" aria-label="SignBank Terminal Interface">
@@ -166,15 +192,44 @@ export default function Landing() {
           </div>
 
           {/* Camera Visualizer container integrated into cockpit controls */}
-          <div className="hud-camera-frame glass-strong">
-            <div className="cam-frame-title">
-              <span className="cam-pulse-dot" />
-              SENSORS FEED V.02
+          {!showTutorial && (
+            <div className="hud-camera-frame glass-strong">
+              <div className="cam-frame-title">
+                <span className="cam-pulse-dot" />
+                SENSORS FEED V.02
+              </div>
+              <GestureCamera onGesture={handleNormalGesture} />
+              {!tutorialDone && (
+                <button className="ar-start-btn glass" onClick={handleTutorialShow}>
+                  <span className="ar-start-icon">🎮</span>
+                  <div className="ar-start-text">
+                    <strong>AR Training</strong>
+                    <span>Learn gestures in 5 steps</span>
+                  </div>
+                  <span className="ar-start-badge">NEW</span>
+                </button>
+              )}
+              {tutorialDone && (
+                <div className="ar-restart-hint">
+                  <button className="ar-restart-btn" onClick={handleTutorialShow}>
+                    🎮 Retry tutorial
+                  </button>
+                </div>
+              )}
             </div>
-            <GestureCamera onGesture={handleGesture} />
-          </div>
+          )}
         </div>
       </div>
+
+      <OnboardingTutorial
+        ref={tutorialRef}
+        visible={showTutorial}
+        onDismiss={handleTutorialDismiss}
+      >
+        {showTutorial && (
+          <GestureCamera onGesture={handleTutorialGesture} />
+        )}
+      </OnboardingTutorial>
     </div>
   );
 }

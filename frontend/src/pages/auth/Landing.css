@@ -402,6 +402,87 @@
   aspect-ratio: 16/9;
 }
 
+/* ─── AR TRAINING BUTTON ─── */
+.ar-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 18px;
+  border-radius: var(--r-md);
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  cursor: pointer;
+  transition: all var(--t-spring);
+  text-align: left;
+}
+
+.ar-start-btn:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.ar-start-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.ar-start-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.ar-start-text strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.ar-start-text span {
+  font-size: 0.68rem;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+.ar-start-badge {
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  padding: 3px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  animation: pulse 1.5s ease infinite;
+}
+
+.ar-restart-hint {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.ar-restart-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 99px;
+  transition: all 0.2s ease;
+}
+
+.ar-restart-btn:hover {
+  color: var(--primary-light);
+  background: var(--primary-bg);
+}
+
 /* ─── RESPONSIVE OVERRIDES ─── */
 @media (max-width: 1024px) {
   .cockpit-grid {

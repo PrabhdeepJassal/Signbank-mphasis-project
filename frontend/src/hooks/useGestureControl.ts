@@ -37,6 +37,10 @@ const BUFFER_SIZE = 20;
 const CONFIRM_COUNT = 16;
 const COOLDOWN_MS = 2200;
 const ROCK_HOLD_MS = 700;
+const PINCH_LOCK_THRESHOLD = 0.048;
+const PINCH_UNLOCK_THRESHOLD = 0.065;
+const PINCH_DEADZONE = 60;
+const SCROLL_CONTAINER_REQUERY_INTERVAL = 30;
 
 declare const Hands: any;
 declare const FaceDetection: any;
@@ -110,7 +114,7 @@ function drawThreeFingerScrollIndicator(
   
   // 2. Draw neutral deadzone guide bands
   ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
-  ctx.fillRect(0, (H / 2) - 30, 640, 60);
+  ctx.fillRect(0, (H / 2) - 60, 640, 120);
 
   // 3. Draw active glowing particle circle at pinch center
   const color = isUpper ? '#38bdf8' : '#ef4444';
@@ -191,16 +195,21 @@ export function useGestureControl(
     let currentVelocity = 0;
     let currentScrollY = 0;
     let cachedScrollContainer: HTMLElement | null = null;
+    let pinchFrameCount = 0;
     let faceDetectionInst: any = null;
     // High-refresh-rate smooth scroll rendering thread (RAF)
     let scrollAnimId = 0;
     const smoothScrollLoop = () => {
       if (isPinchLocked && cachedScrollContainer) {
-        // Butter-smooth heavy friction dampening for completely jitter-free gliding
-        currentVelocity = currentVelocity * 0.90 + targetVelocity * 0.10;
+        // Direction-aware damping: reverse direction faster, glide same direction smoother
+        if (targetVelocity !== 0 && currentVelocity !== 0 && Math.sign(targetVelocity) !== Math.sign(currentVelocity)) {
+          currentVelocity = currentVelocity * 0.70 + targetVelocity * 0.30;
+        } else {
+          currentVelocity = currentVelocity * 0.93 + targetVelocity * 0.07;
+        }
         
         // Deadband: ignore extremely tiny velocity noise
-        if (Math.abs(currentVelocity) < 0.1) {
+        if (Math.abs(currentVelocity) < 0.2) {
           currentVelocity = 0;
         }
         
@@ -370,9 +379,6 @@ export function useGestureControl(
               raw1 = hands.length > 1 ? classifySingleHand(hands[1], handedness[1]?.label ?? 'Left') : 'Unknown';
             }
 
-            // ── GESTURE DEADZONE FOR SCROLLBAR REGION (Left 80px or while active dragging) ──
-            // Left scroller muted deadzone removed to give full screen for gestures
-
             // BACK gesture from hand 0 only
             if (raw0 === 'OPEN_PALM') { openPalmSeen = true; backStartTime = null; }
             else if (openPalmSeen && raw0 === 'FIST') {
@@ -412,12 +418,11 @@ export function useGestureControl(
             let pinchCenterY = 0;
 
             if (hands.length > 0) {
-              const thumb = hands[0][4];  // Thumb tip landmark
-              const index = hands[0][8];  // Index tip landmark
-              const middle = hands[0][12]; // Middle tip landmark
+              const thumb = hands[0][4];
+              const index = hands[0][8];
+              const middle = hands[0][12];
 
               if (thumb && index && middle) {
-                // Calculate 3D distances between the three finger tips
                 const d_thumb_index = Math.sqrt(
                   Math.pow(thumb.x - index.x, 2) +
                   Math.pow(thumb.y - index.y, 2) +
@@ -436,43 +441,65 @@ export function useGestureControl(
                   Math.pow((index.z ?? 0) - (middle.z ?? 0), 2)
                 );
 
-                // If all three tips are pinched together like picking something (< 0.052)
-                isThreeFingerPinchActive = d_thumb_index < 0.052 && d_thumb_middle < 0.052 && d_index_middle < 0.052;
+                // Hysteresis: tighter to engage, wider to disengage (prevents rapid flickering)
+                if (!isPinchLocked) {
+                  isThreeFingerPinchActive =
+                    d_thumb_index < PINCH_LOCK_THRESHOLD &&
+                    d_thumb_middle < PINCH_LOCK_THRESHOLD &&
+                    d_index_middle < PINCH_LOCK_THRESHOLD;
+                } else {
+                  isThreeFingerPinchActive =
+                    d_thumb_index < PINCH_UNLOCK_THRESHOLD &&
+                    d_thumb_middle < PINCH_UNLOCK_THRESHOLD &&
+                    d_index_middle < PINCH_UNLOCK_THRESHOLD;
+                }
 
                 if (isThreeFingerPinchActive) {
-                  // Calculate average coordinate of pinch
                   pinchCenterX = ((thumb.x + index.x + middle.x) / 3) * W;
                   pinchCenterY = ((thumb.y + index.y + middle.y) / 3) * H;
 
-                  // Suppress standard gestures during scrolling
                   raw0 = 'OK';
                   isTwoHandDigit = false;
 
                   if (!isPinchLocked) {
                     isPinchLocked = true;
-                    // Cache DOM scroll container
-                    cachedScrollContainer = document.getElementById('portal-content') || 
-                                            document.querySelector('.portal-main') as HTMLElement || 
-                                            document.documentElement || 
-                                            document.body;
+                    pinchFrameCount = 0;
+                    cachedScrollContainer =
+                      document.getElementById('portal-content') ||
+                      document.getElementById('main-content') ||
+                      document.querySelector('.portal-main') as HTMLElement ||
+                      document.querySelector('.admin-main') as HTMLElement ||
+                      document.querySelector('main') as HTMLElement ||
+                      document.documentElement ||
+                      document.body;
 
                     currentScrollY = cachedScrollContainer ? cachedScrollContainer.scrollTop : (window.scrollY || document.documentElement.scrollTop);
                     targetVelocity = 0;
                     currentVelocity = 0;
                   }
 
-                  // Neutral dividing line is H / 2
-                  const offset = pinchCenterY - (H / 2);
-                  const DEADZONE = 30; // 30px deadzone around center dividing line
+                  // Periodically re-query scroll container in case DOM changed
+                  pinchFrameCount++;
+                  if (pinchFrameCount % SCROLL_CONTAINER_REQUERY_INTERVAL === 0) {
+                    const fresh =
+                      document.getElementById('portal-content') ||
+                      document.getElementById('main-content') ||
+                      document.querySelector('.portal-main') as HTMLElement ||
+                      document.querySelector('.admin-main') as HTMLElement ||
+                      document.querySelector('main') as HTMLElement ||
+                      document.documentElement ||
+                      document.body;
+                    if (fresh) cachedScrollContainer = fresh;
+                  }
 
-                  if (Math.abs(offset) < DEADZONE) {
+                  const offset = pinchCenterY - (H / 2);
+
+                  if (Math.abs(offset) < PINCH_DEADZONE) {
                     targetVelocity = 0;
                   } else {
                     const sign = offset > 0 ? 1 : -1;
-                    const absOffset = Math.abs(offset) - DEADZONE;
-                    
-                    // Comfortable rate-scrolling velocity curve
-                    targetVelocity = sign * Math.min(22, Math.pow(absOffset * 0.12, 1.5));
+                    const absOffset = Math.abs(offset) - PINCH_DEADZONE;
+                    targetVelocity = sign * Math.min(25, Math.pow(absOffset * 0.10, 1.4));
                   }
                 }
               }
