@@ -252,7 +252,7 @@ export function useGestureControl(
           return 'THUMB_DOWN';
       }
 
-      if (Math.abs(lm[4].x - lm[8].x) < .04 && Math.abs(lm[4].y - lm[8].y) < .04 && Math.abs(lm[4].x - lm[12].x) + Math.abs(lm[4].y - lm[12].y) > 0.07) return 'OK';
+      if (Math.abs(lm[4].x - lm[8].x) < .04 && Math.abs(lm[4].y - lm[8].y) < .04 && Math.sqrt(Math.pow(lm[4].x - lm[12].x, 2) + Math.pow(lm[4].y - lm[12].y, 2)) > 0.1) return 'OK';
       if (lm[8].y < lm[6].y && lm[20].y < lm[18].y && lm[12].y > lm[10].y + .02 && lm[16].y > lm[14].y + .02)
         return 'ROCK';
       if (total === 0) return 'FIST';
