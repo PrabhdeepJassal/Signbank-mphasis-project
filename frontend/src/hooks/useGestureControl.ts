@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { getAverageEyeAspectRatio } from '../utils/eyeAspectRatio';
 
 export type GestureEvent =
   | { type: 'DIGIT'; value: string; hand?: number }
@@ -44,13 +45,19 @@ const PINCH_DEADZONE = 30;
 const SCROLL_CONTAINER_REQUERY_INTERVAL = 30;
 
 declare const Hands: any;
-declare const FaceDetection: any;
+declare const FaceMesh: any;
 declare const HAND_CONNECTIONS: any;
 declare const drawConnectors: any;
 declare const drawLandmarks: any;
 
 const HAND_COLORS = ['#00e676', '#40c4ff'];
 const HAND_LABELS = ['Right', 'Left'];
+const EYE_CLOSED_EAR_THRESHOLD = 0.19;
+const EYE_CLOSED_LOCK_CONFIRM_MS = 2500;
+
+type SecurityState = 'NORMAL' | 'WARNING' | 'LOCKED';
+
+let securityOverlayRemovalTimer: ReturnType<typeof setTimeout> | null = null;
 
 function calcConfidence(buffer: string[], current: string): number {
   if (!buffer.length) return 0;
@@ -166,6 +173,66 @@ function drawConfidenceOverlay(ctx: CanvasRenderingContext2D, gesture: string, c
   ctx.fillText(label, bx + 6, by + 14); ctx.restore();
 }
 
+function ensureSecurityOverlay() {
+  if (securityOverlayRemovalTimer) {
+    clearTimeout(securityOverlayRemovalTimer);
+    securityOverlayRemovalTimer = null;
+  }
+  let overlay = document.getElementById('eye-verification-lock-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'eye-verification-lock-overlay';
+    overlay.setAttribute(
+      'style',
+      'position:fixed;inset:0;width:100vw;height:100vh;background:rgba(8,13,28,0.98);backdrop-filter:blur(24px);z-index:999999;display:flex;align-items:center;justify-content:center;color:#fff;font-family:system-ui,sans-serif;text-align:center;transition:opacity .2s ease;opacity:0'
+    );
+    overlay.innerHTML = `
+      <div style="width:min(540px,calc(100vw - 32px));padding:32px;border:1px solid rgba(148,163,184,.25);background:rgba(15,23,42,.9);box-shadow:0 24px 80px rgba(0,0,0,.4)">
+        <div style="font-size:40px;margin-bottom:12px">!</div>
+        <h1 id="eye-lock-title" style="margin:0 0 8px;font-size:28px;letter-spacing:.02em">SECURITY WARNING</h1>
+        <p id="eye-lock-message" style="margin:0 0 18px;color:#cbd5e1;font-size:15px;line-height:1.5">Another person has been detected. Close both eyes for 2-3 seconds to confirm locking the app.</p>
+        <div style="height:10px;background:rgba(148,163,184,.22);overflow:hidden">
+          <div id="eye-lock-progress" style="height:100%;width:0%;background:#22c55e;transition:width .12s linear"></div>
+        </div>
+        <div id="eye-lock-detail" style="margin-top:14px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:.08em">Waiting for lock confirmation</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => { overlay!.style.opacity = '1'; });
+  }
+  return overlay;
+}
+
+function updateSecurityOverlay(state: SecurityState, faceCount: number, progress: number, message: string) {
+  const overlay = ensureSecurityOverlay();
+  overlay.style.opacity = '1';
+  const pct = Math.max(0, Math.min(100, progress * 100));
+  const titleEl = document.getElementById('eye-lock-title');
+  const progressEl = document.getElementById('eye-lock-progress');
+  const messageEl = document.getElementById('eye-lock-message');
+  const detailEl = document.getElementById('eye-lock-detail');
+  if (titleEl) titleEl.textContent = state === 'LOCKED' ? 'APPLICATION LOCKED' : 'SECURITY WARNING';
+  if (progressEl) progressEl.style.width = `${pct}%`;
+  if (messageEl) messageEl.textContent = message;
+  if (detailEl) {
+    detailEl.textContent = state === 'LOCKED'
+      ? 'Use the unlock gesture placeholder: thumbs up'
+      : `${faceCount} face${faceCount === 1 ? '' : 's'} detected - ${Math.round(pct)}% lock confirmed`;
+  }
+}
+
+function removeSecurityOverlay() {
+  const overlay = document.getElementById('eye-verification-lock-overlay');
+  if (overlay) {
+    overlay.style.opacity = '0';
+    securityOverlayRemovalTimer = setTimeout(() => {
+      overlay.remove();
+      securityOverlayRemovalTimer = null;
+    }, 250);
+  }
+  document.getElementById('peeking-warning-overlay')?.remove();
+}
+
 export function useGestureControl(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -197,7 +264,13 @@ export function useGestureControl(
     let currentScrollY = 0;
     let cachedScrollContainer: HTMLElement | null = null;
     let pinchFrameCount = 0;
-    let faceDetectionInst: any = null;
+    let faceMeshInst: any = null;
+    let faceMeshReady = false;
+    let securityState: SecurityState = 'NORMAL';
+    let warningFaceCount: number | null = null;
+    let verifierIndex: number | null = null;
+    let eyeClosedStart: number | null = null;
+    let verificationProgress = 0;
     // High-refresh-rate smooth scroll rendering thread (RAF)
     let scrollAnimId = 0;
     const smoothScrollLoop = () => {
@@ -224,6 +297,105 @@ export function useGestureControl(
       scrollAnimId = requestAnimationFrame(smoothScrollLoop);
     };
     scrollAnimId = requestAnimationFrame(smoothScrollLoop);
+
+    function emitGesture(event: GestureEvent) {
+      if (!enabledRef.current || securityState !== 'NORMAL') return;
+      onGestureRef.current(event);
+    }
+
+    function resetEyeClosureConfirmation(faceCount: number | null = warningFaceCount) {
+      warningFaceCount = faceCount;
+      verifierIndex = null;
+      eyeClosedStart = null;
+      verificationProgress = 0;
+    }
+
+    function stopActiveGestureState() {
+      gestureBuffer0 = [];
+      gestureBuffer1 = [];
+      bothThumbsDownBuffer = [];
+      openPalmSeen = false;
+      backStartTime = null;
+      exitSlider();
+    }
+
+    function transitionToNormal() {
+      securityState = 'NORMAL';
+      resetEyeClosureConfirmation(null);
+      removeSecurityOverlay();
+    }
+
+    function transitionToWarning(faceCount: number) {
+      resetEyeClosureConfirmation(faceCount);
+      stopActiveGestureState();
+      securityState = 'WARNING';
+      updateSecurityOverlay('WARNING', faceCount, 0, 'Another person has been detected. Close both eyes for 2-3 seconds to lock the app.');
+    }
+
+    function transitionToLocked(faceCount: number) {
+      resetEyeClosureConfirmation(null);
+      stopActiveGestureState();
+      securityState = 'LOCKED';
+      updateSecurityOverlay('LOCKED', faceCount, 1, 'Application locked. It will stay locked until an explicit unlock gesture is performed.');
+    }
+
+    function handleExplicitUnlockGesture(raw: string): boolean {
+      if (securityState === 'LOCKED' && raw === 'THUMB_UP') {
+        transitionToNormal();
+        return true;
+      }
+      return false;
+    }
+
+    function updateWarningEyeClosure(faces: any[][], faceCount: number, now: number) {
+      if (warningFaceCount !== faceCount) {
+        resetEyeClosureConfirmation(faceCount);
+        updateSecurityOverlay('WARNING', faceCount, 0, 'Face count changed. Close both eyes again for 2-3 seconds to confirm locking.');
+        return;
+      }
+
+      const closedIndex = faces.findIndex((points: any[]) => getAverageEyeAspectRatio(points) < EYE_CLOSED_EAR_THRESHOLD);
+      if (closedIndex < 0) {
+        resetEyeClosureConfirmation(faceCount);
+        updateSecurityOverlay('WARNING', faceCount, 0, 'Blink ignored. Close both eyes continuously to confirm locking.');
+        return;
+      }
+
+      if (verifierIndex !== closedIndex) {
+        verifierIndex = closedIndex;
+        eyeClosedStart = now;
+      }
+
+      const elapsed = eyeClosedStart === null ? 0 : now - eyeClosedStart;
+      verificationProgress = Math.min(1, elapsed / EYE_CLOSED_LOCK_CONFIRM_MS);
+      updateSecurityOverlay('WARNING', faceCount, verificationProgress, `User ${closedIndex + 1} confirming lock. Keep eyes closed.`);
+
+      if (elapsed >= EYE_CLOSED_LOCK_CONFIRM_MS) transitionToLocked(faceCount);
+    }
+
+    function handleFaceMeshResults(results: any) {
+      if (cancelled) return;
+      const faces = results.multiFaceLandmarks ?? [];
+      const faceCount = faces.length;
+      const now = Date.now();
+
+      if (securityState === 'LOCKED') {
+        updateSecurityOverlay('LOCKED', faceCount, 1, 'Application locked. It will stay locked until an explicit unlock gesture is performed.');
+        return;
+      }
+
+      if (faceCount <= 1) {
+        if (securityState === 'WARNING') transitionToNormal();
+        return;
+      }
+
+      if (securityState === 'NORMAL') {
+        transitionToWarning(faceCount);
+        return;
+      }
+
+      updateWarningEyeClosure(faces, faceCount, now);
+    }
 
     function countFingers(lm: any[], label: string): number {
       let f = 0;
@@ -263,6 +435,8 @@ export function useGestureControl(
 
     function fireGesture(raw: string, confidence: number, hand: number) {
       if (!enabledRef.current) return;
+      if (handleExplicitUnlockGesture(raw)) return;
+      if (securityState !== 'NORMAL') return;
       const now = Date.now();
       const key = `${hand}-${raw}`;
       if (key === lastFiredGesture && now - lastFiredTime < COOLDOWN_MS) return;
@@ -279,15 +453,15 @@ export function useGestureControl(
       else if (/^(10|[1-9])$/.test(raw)) {
         event = { type: 'DIGIT', value: raw, hand };
         const gid = FINGER_TO_GESTURE_ID[raw];
-        if (gid) onGestureRef.current({ type: 'GESTURE_ID', id: gid, confidence, hand });
+        if (gid) emitGesture({ type: 'GESTURE_ID', id: gid, confidence, hand });
       }
-      if (event) onGestureRef.current(event);
+      if (event) emitGesture(event);
     }
 
     function exitSlider() {
       if (inSlider) {
         inSlider = false; prevSmoothedX = 0.5; velocity = 0;
-        onGestureRef.current({ type: 'SLIDER_COMMIT' });
+        emitGesture({ type: 'SLIDER_COMMIT' });
       }
       rockHoldStart = null;
     }
@@ -314,35 +488,17 @@ export function useGestureControl(
           minTrackingConfidence: 0.7,
         });
 
-        // Lazy FaceDetection init — doesn't block startup, initializes in background
-        let faceDetectionReady = false;
-        const initFaceDetection = async () => {
-          while (typeof FaceDetection === 'undefined') await new Promise(r => setTimeout(r, 200));
+        // Lazy Face Mesh init — provides face landmark detection for eye-blink anti-peek
+        const initFaceMesh = async () => {
+          while (typeof FaceMesh === 'undefined') await new Promise(r => setTimeout(r, 200));
           if (cancelled) return;
-          const inst = new FaceDetection({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}` });
-          inst.setOptions({ model: 'short', minDetectionConfidence: 0.65 });
-          inst.onResults((results: any) => {
-            if (cancelled) return;
-            const faces = results.detections ?? [];
-            if (faces.length > 1) {
-              let overlay = document.getElementById('peeking-warning-overlay');
-              if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'peeking-warning-overlay';
-                overlay.innerHTML = `<div class="peeking-content"><div class="peeking-icon">⚠️</div><h1>SECURITY ALERT</h1><p>SCREEN PEEKING DETECTED!</p><div class="peeking-sub">SignBank Enterprise has locked the screen to protect your security.</div></div>`;
-                overlay.setAttribute('style', 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(10,15,30,0.98);backdrop-filter:blur(25px);z-index:999999;display:flex;align-items:center;justify-content:center;color:#fff;font-family:system-ui,sans-serif;text-align:center;transition:opacity .3s ease;opacity:0');
-                document.body.appendChild(overlay);
-                requestAnimationFrame(() => { overlay!.style.opacity = '1'; });
-              }
-            } else {
-              const overlay = document.getElementById('peeking-warning-overlay');
-              if (overlay) { overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 300); }
-            }
-          });
-          faceDetectionInst = inst;
-          faceDetectionReady = true;
+          const inst = new FaceMesh({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
+          inst.setOptions({ maxNumFaces: 4, refineLandmarks: true, minDetectionConfidence: 0.65, minTrackingConfidence: 0.65 });
+          inst.onResults(handleFaceMeshResults);
+          faceMeshInst = inst;
+          faceMeshReady = true;
         };
-        initFaceDetection();
+        initFaceMesh();
 
         handsInst.onResults((results: any) => {
           if (cancelled) return;
@@ -608,8 +764,8 @@ export function useGestureControl(
           if (v && !v.paused && v.readyState >= 2) {
             try { await handsInst.send({ image: v }); } catch (_) { }
             faceFrameSkip++;
-            if (faceFrameSkip % 30 === 0 && faceDetectionReady && faceDetectionInst) {
-              try { faceDetectionInst.send({ image: v }); } catch (_) { }
+            if (faceFrameSkip % 5 === 0 && faceMeshReady && faceMeshInst) {
+              try { faceMeshInst.send({ image: v }); } catch (_) { }
             }
           }
           animId = requestAnimationFrame(loop);
@@ -626,8 +782,8 @@ export function useGestureControl(
       cancelAnimationFrame(scrollAnimId);
       stream?.getTracks().forEach(t => t.stop());
       handsInst?.close?.();
-      faceDetectionInst?.close?.();
-      document.getElementById('peeking-warning-overlay')?.remove();
+      faceMeshInst?.close?.();
+      removeSecurityOverlay();
     };
   }, []);
 }
