@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useGestureControl,
   type GestureEvent,
@@ -22,6 +23,7 @@ export default function GestureCamera({
 }: Props) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const navigate  = useNavigate();
   const [lastGestures, setLastGestures] = useState<{ h0: string; h1: string }>({ h0: '', h1: '' });
   const [active, setActive] = useState(false);
   const [handCount, setHandCount] = useState(0);
@@ -33,6 +35,11 @@ export default function GestureCamera({
       onLandmarks?.(hands);
     },
     onGesture: (evt) => {
+      if (evt.type === 'BOTH_THUMBS_DOWN') {
+        navigate('/');
+        onGesture?.(evt);
+        return;
+      }
       if (evt.type !== 'SLIDER_ACTIVE' && evt.type !== 'SLIDER_COMMIT') {
         const label =
           evt.type === 'DIGIT'      ? `${evt.value} finger(s)` :

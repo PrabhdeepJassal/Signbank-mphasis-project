@@ -9,6 +9,7 @@ export type GestureEvent =
   | { type: 'OK'; confidence?: number; hand?: number }
   | { type: 'OPEN_PALM'; confidence?: number; hand?: number }
   | { type: 'BACK_DYNAMIC'; confidence?: number }
+  | { type: 'BOTH_THUMBS_DOWN'; confidence?: number }
   | { type: 'GESTURE_ID'; id: string; confidence?: number; hand?: number }
   | { type: 'SLIDER_ACTIVE'; normX: number }
   | { type: 'SLIDER_COMMIT' };
@@ -182,7 +183,7 @@ export function useGestureControl(
 
   useEffect(() => {
     let cancelled = false, animId = 0, handsInst: any = null, stream: MediaStream | null = null;
-    let gestureBuffer0: string[] = [], gestureBuffer1: string[] = [];
+    let gestureBuffer0: string[] = [], gestureBuffer1: string[] = [], bothThumbsDownBuffer: boolean[] = [];
     let openPalmSeen = false, backStartTime: number | null = null;
     const BACK_HOLD_MS = 350;
     let lastFiredGesture = '', lastFiredTime = 0;
@@ -535,6 +536,30 @@ export function useGestureControl(
             }
 
             if (!inSlider) {
+              // ── Both-hands thumbs-down detection ──
+              const isBothDown = raw0 === 'THUMB_DOWN' && raw1 === 'THUMB_DOWN';
+              bothThumbsDownBuffer.push(isBothDown);
+              if (bothThumbsDownBuffer.length > BUFFER_SIZE) bothThumbsDownBuffer.shift();
+              const bothThumbsConfirmed = bothThumbsDownBuffer.filter(Boolean).length >= CONFIRM_COUNT;
+
+              if (bothThumbsConfirmed) {
+                const now = Date.now();
+                const btdKey = 'both';
+                if (btdKey !== lastFiredGesture || now - lastFiredTime >= COOLDOWN_MS) {
+                  lastFiredGesture = btdKey;
+                  lastFiredTime = now;
+                  onGestureRef.current({ type: 'BOTH_THUMBS_DOWN', confidence: 100 });
+                  gestureBuffer0 = []; gestureBuffer1 = [];
+                  bothThumbsDownBuffer = [];
+                  // Don't process individual hands to avoid double-firing
+                  const bothEmoji = RAW_TO_EMOJI['THUMB_DOWN'] ?? '👎';
+                  ctx.font = 'bold 48px serif'; ctx.fillStyle = '#ef4444';
+                  ctx.shadowColor = 'rgba(239,68,68,.6)'; ctx.shadowBlur = 16;
+                  ctx.fillText(bothEmoji + bothEmoji, W / 2 - 30, H / 2);
+                  ctx.restore(); continue;
+                }
+              }
+
               const handsToProcess = [
                 { raw: raw0, buf: gestureBuffer0, idx: 0 },
                 { raw: raw1, buf: gestureBuffer1, idx: 1 },
@@ -565,7 +590,7 @@ export function useGestureControl(
               }
             }
           } else {
-            gestureBuffer0 = []; gestureBuffer1 = [];
+            gestureBuffer0 = []; gestureBuffer1 = []; bothThumbsDownBuffer = [];
             exitSlider();
           }
 
