@@ -396,16 +396,20 @@ export function useGestureControl(
               raw1 = hands.length > 1 ? classifySingleHand(hands[1], handedness[1]?.label ?? 'Left') : 'Unknown';
             }
 
-            // BACK gesture from hand 0 only
+            // BACK gesture from hand 0 only (OPEN_PALM → FIST held 350ms)
             if (raw0 === 'OPEN_PALM') { openPalmSeen = true; backStartTime = null; }
-            else if (openPalmSeen && raw0 === 'FIST') {
-              if (!backStartTime) backStartTime = now;
-              if (now - backStartTime >= BACK_HOLD_MS) {
-                openPalmSeen = false; backStartTime = null;
-                onGestureRef.current({ type: 'BACK_DYNAMIC', confidence: 100 });
-                ctx.restore(); return;
+            else if (raw0 === 'FIST') {
+              if (openPalmSeen) {
+                if (!backStartTime) backStartTime = now;
+                else if (now - backStartTime >= BACK_HOLD_MS) {
+                  openPalmSeen = false; backStartTime = null;
+                  onGestureRef.current({ type: 'BACK_DYNAMIC', confidence: 100 });
+                  ctx.restore(); return;
+                }
               }
-            } else { /* no back */ }
+            } else {
+              openPalmSeen = false; backStartTime = null;
+            }
 
             const wristY = hands[0][0].y * H;
 
@@ -551,13 +555,13 @@ export function useGestureControl(
                   onGestureRef.current({ type: 'BOTH_THUMBS_DOWN', confidence: 100 });
                   gestureBuffer0 = []; gestureBuffer1 = [];
                   bothThumbsDownBuffer = [];
-                  // Don't process individual hands to avoid double-firing
-                  const bothEmoji = RAW_TO_EMOJI['THUMB_DOWN'] ?? '👎';
-                  ctx.font = 'bold 48px serif'; ctx.fillStyle = '#ef4444';
-                  ctx.shadowColor = 'rgba(239,68,68,.6)'; ctx.shadowBlur = 16;
-                  ctx.fillText(bothEmoji + bothEmoji, W / 2 - 30, H / 2);
-                  ctx.restore(); continue;
                 }
+                // Skip individual hand processing entirely while both-hands confirmed
+                const bothEmoji = RAW_TO_EMOJI['THUMB_DOWN'] ?? '👎';
+                ctx.font = 'bold 48px serif'; ctx.fillStyle = '#ef4444';
+                ctx.shadowColor = 'rgba(239,68,68,.6)'; ctx.shadowBlur = 16;
+                ctx.fillText(bothEmoji + bothEmoji, W / 2 - 30, H / 2);
+                ctx.restore(); return;
               }
 
               const handsToProcess = [
