@@ -37,6 +37,16 @@ const roles = [
     path: '/login/gesture',
     accentColor: '#10b981',
   },
+  {
+    id: 'tutorial',
+    label: 'AR TRAINING',
+    subLabel: 'Gesture Tutorial',
+    description: 'Learn all hand gestures with the AR ghost-hand guide.',
+    emoji: '🎮',
+    gesture: '🖐️ Four Fingers',
+    path: '',
+    accentColor: '#f59e0b',
+  },
 ];
 
 export default function Landing() {
@@ -50,6 +60,7 @@ export default function Landing() {
     () => localStorage.getItem('sb_onboarding_done') === 'true'
   );
   const tutorialRef = useRef<OnboardingHandle>(null);
+  const tutorialShowRef = useRef<() => void>(() => {});
 
   // Simulate a live retro terminal stream on the HUD
   useEffect(() => {
@@ -73,14 +84,16 @@ export default function Landing() {
     return () => clearInterval(interval);
   }, []);
 
-  const buttons = [
+  const { handleGesture } = useGlobalGestureNav({ buttons: [
     { id: 'admin', gestureId: 'G001', action: () => navigate('/admin/login'), label: 'Admin Login' },
     { id: 'operator', gestureId: 'G002', action: () => navigate('/login/gesture'), label: 'Operator/Viewer Login' },
-  ];
-
-  const { handleGesture } = useGlobalGestureNav({ buttons });
+  ]});
 
   const handleNormalGesture = useCallback((evt: GestureEvent) => {
+    if (evt.type === 'GESTURE_ID' && evt.id === 'G004') {
+      tutorialShowRef.current();
+      return;
+    }
     handleGesture(evt);
   }, [handleGesture]);
 
@@ -88,15 +101,17 @@ export default function Landing() {
     tutorialRef.current?.reportGesture(evt);
   }, []);
 
+  const handleTutorialShow = useCallback(() => {
+    setShowTutorial(true);
+    setTutorialDone(false);
+  }, []);
+
+  tutorialShowRef.current = handleTutorialShow;
+
   const handleTutorialDismiss = useCallback(() => {
     setShowTutorial(false);
     setTutorialDone(true);
     localStorage.setItem('sb_onboarding_done', 'true');
-  }, []);
-
-  const handleTutorialShow = useCallback(() => {
-    setShowTutorial(true);
-    setTutorialDone(false);
   }, []);
 
   return (
@@ -169,7 +184,7 @@ export default function Landing() {
               <button
                 key={r.id}
                 className="selector-module glass"
-                onClick={() => navigate(r.path)}
+                onClick={() => r.id === 'tutorial' ? handleTutorialShow() : navigate(r.path)}
                 aria-label={`Activate ${r.label}`}
                 style={{
                   '--accent': r.accentColor,

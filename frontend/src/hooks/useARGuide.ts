@@ -48,17 +48,17 @@ type Pose = [boolean, boolean, boolean, boolean, boolean];
 
 const GESTURE_POSE: Record<string, Pose> = {
   '0':          [false, false, false, false, false],
-  '1':          [true,  true,  false, false, false],
-  '2':          [true,  true,  true,  false, false],
-  '3':          [true,  true,  true,  true,  false],
-  '4':          [true,  true,  true,  true,  false],
+  '1':          [false, true,  false, false, false],
+  '2':          [false, true,  true,  false, false],
+  '3':          [false, true,  true,  true,  false],
+  '4':          [false, true,  true,  true,  true ],
   '5':          [true,  true,  true,  true,  true ],
   'FIST':       [false, false, false, false, false],
   'OPEN_PALM':  [true,  true,  true,  true,  true ],
   'THUMB_UP':   [true,  false, false, false, false],
-  'THUMB_DOWN': [false, false, false, false, false],
-  'ROCK':       [true,  true,  false, false, true ],
-  'OK':         [true,  true,  false, false, false],
+  'THUMB_DOWN': [true,  false, false, false, false],
+  'ROCK':       [false, true,  false, false, true ],
+  'OK':         [false, true,  false, false, false],
 };
 
 function applyPose(lm: [number, number][], [thumbExt, ...fingerExt]: Pose) {
@@ -78,24 +78,27 @@ function applyPose(lm: [number, number][], [thumbExt, ...fingerExt]: Pose) {
   }
 }
 
-// For THUMB_DOWN: rotate the thumb downward
+// For THUMB_DOWN: extend thumb downward, all other fingers curled
 function applyThumbDown(lm: [number, number][]) {
   applyPose(lm, [false, false, false, false, false] as Pose);
-  // Override thumb to point down
-  lm[2] = [0.24, 0.58];
-  lm[3] = [0.20, 0.68];
-  lm[4] = [0.18, 0.78];
+  // Override thumb to point clearly down
+  lm[1] = [0.30, 0.55];
+  lm[2] = [0.26, 0.62];
+  lm[3] = [0.28, 0.74];
+  lm[4] = [0.30, 0.86];
 }
 
 // For OK: bring thumb tip and index tip together
 function applyOkPose(lm: [number, number][]) {
-  applyPose(lm, [true, false, false, false, false] as Pose);
-  // Extend index and make tips meet
-  lm[6] = [0.34, 0.46];
-  lm[7] = [0.29, 0.50];
-  lm[8] = [0.26, 0.52];
-  // Thumb tip meets index tip
-  lm[4] = [0.26, 0.52];
+  applyPose(lm, [false, false, false, false, false] as Pose);
+  // Keep thumb and index curled up naturally toward each other
+  lm[2] = [0.32, 0.52];
+  lm[3] = [0.28, 0.48];
+  lm[4] = [0.25, 0.46];
+  lm[6] = [0.38, 0.52];
+  lm[7] = [0.32, 0.50];
+  lm[8] = [0.25, 0.46];
+  // Middle, ring, pinky stay curled
 }
 
 function makeLandmarks(gesture: string): [number, number][] {
@@ -132,36 +135,63 @@ function drawHandSkeleton(
     cy + (lm[1] - 0.5) * scale,
   ] as const;
 
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = 'round';
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 10;
+  // Draw palm fill for expressiveness
+  const PALM_INDICES = [0, 5, 9, 13, 17, 0];
+  ctx.beginPath();
+  const [sx, sy] = proj(landmarks[0]);
+  ctx.moveTo(sx, sy);
+  for (let i = 1; i < PALM_INDICES.length; i++) {
+    const [px, py] = proj(landmarks[PALM_INDICES[i]]);
+    ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  const palmGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale * 0.35);
+  palmGrad.addColorStop(0, color + '33');
+  palmGrad.addColorStop(1, color + '11');
+  ctx.fillStyle = palmGrad;
+  ctx.fill();
 
+  // Draw finger bones with gradient thickness
   for (const [i, j] of HAND_CONNECTIONS) {
     const [x1, y1] = proj(landmarks[i]);
     const [x2, y2] = proj(landmarks[j]);
+    const isTipConn = [4, 8, 12, 16, 20].includes(j);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = isTipConn ? 3 : 2.5;
+    ctx.lineCap = 'round';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = isTipConn ? 14 : 8;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
   }
 
-  ctx.shadowBlur = 4;
-  for (const lm of landmarks) {
+  ctx.shadowBlur = 6;
+  for (const [i, lm] of landmarks.entries()) {
     const [x, y] = proj(lm);
+    const isPalmJoint = [0, 5, 9, 13, 17].includes(i);
+    const isWrist = i === 0;
+    const radius = isWrist ? 4 : isPalmJoint ? 3.5 : FINGER_TIP_INDICES.includes(i) ? 2.5 : 2;
     ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = isPalmJoint ? color : '#ffffff';
+    ctx.shadowColor = isPalmJoint ? color : 'rgba(255,255,255,0.5)';
+    ctx.shadowBlur = isPalmJoint ? 10 : 4;
     ctx.fill();
   }
 
-  ctx.shadowBlur = 14;
+  // Draw finger tips with extra glow
+  ctx.shadowBlur = 18;
   for (const idx of FINGER_TIP_INDICES) {
     const [x, y] = proj(landmarks[idx]);
+    const tipGrad = ctx.createRadialGradient(x, y, 0, x, y, 8);
+    tipGrad.addColorStop(0, '#ffffff');
+    tipGrad.addColorStop(0.4, color);
+    tipGrad.addColorStop(1, color + '00');
     ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = tipGrad;
     ctx.fill();
   }
 

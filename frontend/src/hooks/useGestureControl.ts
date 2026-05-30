@@ -37,9 +37,9 @@ const BUFFER_SIZE = 20;
 const CONFIRM_COUNT = 16;
 const COOLDOWN_MS = 2200;
 const ROCK_HOLD_MS = 700;
-const PINCH_LOCK_THRESHOLD = 0.048;
-const PINCH_UNLOCK_THRESHOLD = 0.065;
-const PINCH_DEADZONE = 60;
+const PINCH_LOCK_THRESHOLD = 0.065;
+const PINCH_UNLOCK_THRESHOLD = 0.085;
+const PINCH_DEADZONE = 30;
 const SCROLL_CONTAINER_REQUERY_INTERVAL = 30;
 
 declare const Hands: any;
@@ -226,19 +226,32 @@ export function useGestureControl(
 
     function countFingers(lm: any[], label: string): number {
       let f = 0;
-      if (label === 'Right') { if (lm[4].x < lm[3].x) f++; } else { if (lm[4].x > lm[3].x) f++; }
-      if (lm[8].y < lm[6].y) f++; if (lm[12].y < lm[10].y) f++;
-      if (lm[16].y < lm[14].y) f++; if (lm[20].y < lm[18].y) f++;
+      const thumbToSide = label === 'Right' ? lm[4].x < lm[2].x : lm[4].x > lm[2].x;
+      const thumbToSideDist = Math.abs(lm[4].x - lm[2].x);
+      if (thumbToSide && thumbToSideDist > 0.04) f++;
+      if (lm[8].y < lm[6].y - 0.02) f++; if (lm[12].y < lm[10].y - 0.02) f++;
+      if (lm[16].y < lm[14].y - 0.02) f++; if (lm[20].y < lm[18].y - 0.02) f++;
       return f;
     }
 
     function classifySingleHand(lm: any[], label: string): string {
       const total = countFingers(lm, label);
-      if (lm[4].y < lm[3].y - .05 && lm[8].y > lm[6].y && lm[12].y > lm[10].y && lm[16].y > lm[14].y && lm[20].y > lm[18].y)
-        return 'THUMB_UP';
-      if (lm[4].y > lm[3].y + .05 && lm[8].y > lm[6].y && lm[12].y > lm[10].y && lm[16].y > lm[14].y && lm[20].y > lm[18].y)
-        return 'THUMB_DOWN';
-      if (Math.abs(lm[4].x - lm[8].x) < .04 && Math.abs(lm[4].y - lm[8].y) < .04) return 'OK';
+      const otherFingersCurled =
+        lm[8].y > lm[6].y && lm[12].y > lm[10].y &&
+        lm[16].y > lm[14].y && lm[20].y > lm[18].y;
+
+      const thumbTipY = lm[4].y;
+      const thumbMCPY = lm[2].y;
+      const thumbToMCPDist = thumbTipY - thumbMCPY;
+
+      if (otherFingersCurled) {
+        if (thumbToMCPDist < -0.04)
+          return 'THUMB_UP';
+        if (thumbToMCPDist > 0.04)
+          return 'THUMB_DOWN';
+      }
+
+      if (Math.abs(lm[4].x - lm[8].x) < .04 && Math.abs(lm[4].y - lm[8].y) < .04 && Math.abs(lm[4].x - lm[12].x) + Math.abs(lm[4].y - lm[12].y) > 0.07) return 'OK';
       if (lm[8].y < lm[6].y && lm[20].y < lm[18].y && lm[12].y > lm[10].y + .02 && lm[16].y > lm[14].y + .02)
         return 'ROCK';
       if (total === 0) return 'FIST';
@@ -366,8 +379,11 @@ export function useGestureControl(
             if (hands.length > 1) {
               const f0 = countFingers(hands[0], handedness[0]?.label ?? 'Right');
               const f1 = countFingers(hands[1], handedness[1]?.label ?? 'Left');
+              const s0 = classifySingleHand(hands[0], handedness[0]?.label ?? 'Right');
+              const s1 = classifySingleHand(hands[1], handedness[1]?.label ?? 'Left');
+              const isThumbGesture = s0 === 'THUMB_UP' || s0 === 'THUMB_DOWN' || s1 === 'THUMB_UP' || s1 === 'THUMB_DOWN';
               const sum = f0 + f1;
-              if (sum >= 1 && sum <= 10) {
+              if (!isThumbGesture && sum >= 1 && sum <= 10) {
                 isTwoHandDigit = true;
                 raw0 = String(sum);
                 raw1 = 'Unknown';
