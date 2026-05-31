@@ -6,8 +6,6 @@ import PortalLayout from '../../components/Layout/PortalLayout';
 
 import GestureCamera from '../../components/GestureCamera/GestureCamera';
 
-import TrainGestureModal from '../../components/TrainGestureModal/TrainGestureModal';
-
 import { useAuth } from '../../context/AuthContext';
 
 import apiClient from '../../api/client';
@@ -15,8 +13,6 @@ import apiClient from '../../api/client';
 import type { Command, CommandMapping, Gesture } from '../../types';
 
 import type { GestureEvent } from '../../hooks/useGestureControl';
-
-import { useTrainedGestureMatcher } from '../../hooks/useTrainedGestureMatcher';
 
 import './OperatorDashboard.css';
  
@@ -88,7 +84,6 @@ export default function OperatorDashboard() {
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const [showTrainGesture, setShowTrainGesture] = useState(false);
   
   const userId = currentUser?.username ?? 'User';
 
@@ -106,28 +101,7 @@ export default function OperatorDashboard() {
 
   }, [logout, navigate]);
 
-  const handleTrainedMatch = useCallback((slotNumber: number, _slotLabel: string, _confidence: number) => {
-    switch (slotNumber) {
-      case 1:
-        navigate('/operator/balance');
-        break;
-      case 2:
-        navigate('/operator/cards');
-        break;
-      case 3:
-        navigate('/operator/set-limit/credit');
-        break;
-      case 4:
-        doLogout();
-        break;
-    }
-  }, [navigate, doLogout]);
 
-  const { handleLandmarks: handleTrainedLandmarks } = useTrainedGestureMatcher(
-    currentUser?.userId ?? null,
-    handleTrainedMatch
-  );
- 
   const [commands, setCommands] = useState<Command[]>(FALLBACK_COMMANDS);
 
   const [mappings, setMappings] = useState<CommandMapping[]>(FALLBACK_MAPPINGS);
@@ -384,7 +358,7 @@ export default function OperatorDashboard() {
                 Live Gesture Camera
 </div>
  
-              <GestureCamera onGesture={handleGesture} onLandmarks={handleTrainedLandmarks} />
+              <GestureCamera onGesture={handleGesture} />
  
             </div>
  
@@ -468,16 +442,6 @@ export default function OperatorDashboard() {
 
             <button
 
-              className="dashboard-train-btn"
-
-              onClick={() => setShowTrainGesture(true)}
->
-
-              ✋ Train My Gestures
-</button>
-
-            <button
-
               className="dashboard-logout-btn"
 
               onClick={() => setShowLogoutConfirm(true)}
@@ -490,20 +454,12 @@ export default function OperatorDashboard() {
   
         </div>
   
-        {!showLogoutConfirm && !showTrainGesture && (
-<GestureCamera onGesture={handleGesture} onLandmarks={handleTrainedLandmarks} />
+        {!showLogoutConfirm && (
+<GestureCamera onGesture={handleGesture} />
 
         )}
   
       </div>
-  
-      {showTrainGesture && (
-<TrainGestureModal
-          userId={currentUser?.userId ?? userId}
-          onClose={() => setShowTrainGesture(false)}
-          onTrained={() => {}}
-        />
-      )}
   
     </PortalLayout>
 

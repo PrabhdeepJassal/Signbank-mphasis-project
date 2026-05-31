@@ -27,8 +27,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return uri.startsWith("/api/auth")
-            || uri.startsWith("/api/gesture-events")
-            || uri.startsWith("/api/operator/trained-gestures");
+            || uri.startsWith("/api/gesture-events");
     }
 
     @Override

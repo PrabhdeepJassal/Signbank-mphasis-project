@@ -35,24 +35,6 @@ export interface Command {
   page: { pageId: string; pageName: string };
 }
 
-export interface TrainedGesture {
-  id: number | null;
-  userId: string;
-  slotNumber: number;
-  slotLabel: string;
-  trained: boolean;
-  landmarks?: Array<{ x: number; y: number; z: number }>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TrainedGestureMatchResult {
-  matched: boolean;
-  slotNumber: number;
-  slotLabel: string;
-  confidence: number;
-}
-
 export interface CommandMapping {
   mapId: string;
   commandId: string;

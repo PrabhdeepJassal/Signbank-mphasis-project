@@ -562,7 +562,7 @@ export function useGestureControl(
               else if (now - backStartTime >= BACK_HOLD_MS) {
                 backFired = true;
                 openPalmSeen = false; backStartTime = null;
-                onGestureRef.current({ type: 'BACK_DYNAMIC', confidence: 100 });
+                emitGesture({ type: 'BACK_DYNAMIC', confidence: 100 });
                 ctx.restore(); return;
               }
             } else if (f0 > 1 && f0 < 4) {
@@ -586,7 +586,7 @@ export function useGestureControl(
                   const finalX = Math.max(0, Math.min(1, smoothX + velocity));
                   prevSmoothedX = smoothX;
                   drawSlider(ctx, finalX, wristY, W, H, rawX, smoothX);
-                  onGestureRef.current({ type: 'SLIDER_ACTIVE', normX: finalX });
+                  emitGesture({ type: 'SLIDER_ACTIVE', normX: finalX });
                 } else {
                   drawHoldRing(ctx, hands[0][0].x * W, wristY, pct);
                 }
@@ -712,7 +712,7 @@ export function useGestureControl(
                 if (btdKey !== lastFiredGesture || now - lastFiredTime >= COOLDOWN_MS) {
                   lastFiredGesture = btdKey;
                   lastFiredTime = now;
-                  onGestureRef.current({ type: 'BOTH_THUMBS_DOWN', confidence: 100 });
+                  emitGesture({ type: 'BOTH_THUMBS_DOWN', confidence: 100 });
                   gestureBuffer0 = []; gestureBuffer1 = [];
                   bothThumbsDownBuffer = [];
                 }

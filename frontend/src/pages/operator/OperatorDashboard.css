@@ -128,29 +128,6 @@
   margin-top: 28px;
 }
 
-.dashboard-train-btn {
-  padding: 14px 32px;
-  border-radius: var(--r-md);
-  background: var(--accent-bg);
-  color: var(--accent-light);
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  font-size: 0.88rem;
-  font-weight: 700;
-  transition: all var(--t-spring);
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.dashboard-train-btn:hover {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: var(--accent);
-  color: #c4b5fd;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
-}
-
 .dashboard-logout-btn {
   padding: 14px 32px;
   border-radius: var(--r-md);
