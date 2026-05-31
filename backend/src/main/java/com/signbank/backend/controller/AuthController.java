@@ -25,8 +25,8 @@ public class AuthController {
     private final Map<String, ChallengeData> challenges = new ConcurrentHashMap<>();
     private static final long CHALLENGE_TTL_MS = 300_000;
 
-    private static final String[] ALL_GESTURES = {
-        "G001","G002","G003","G004","G005"
+    private static final String[] FINGER_EMOJIS = {
+        "☝️","✌️","🤌","🤘","🖐️","🖐️☝️","🖐️✌️","🖐️🤌","🖐️🤘","🖐️🖐️"
     };
 
     public AuthController(
@@ -148,23 +148,23 @@ public class AuthController {
 
         String challengeId = UUID.randomUUID().toString();
 
-        List<String> shuffled = new ArrayList<>(Arrays.asList(ALL_GESTURES));
+        List<Integer> shuffled = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) shuffled.add(i);
         Collections.shuffle(shuffled);
 
         Map<String, Object> mapping = new LinkedHashMap<>();
-        for (int digit = 1; digit <= 5; digit++) {
-            mapping.put(String.valueOf(digit), shuffled.get(digit - 1));
+        List<Map<String, Object>> mappingList = new ArrayList<>();
+        for (int digit = 1; digit <= 10; digit++) {
+            int show = shuffled.get(digit - 1);
+            mapping.put(String.valueOf(digit), show);
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("digit", digit);
+            entry.put("show", show);
+            entry.put("emoji", FINGER_EMOJIS[show - 1]);
+            mappingList.add(entry);
         }
 
         challenges.put(challengeId, new ChallengeData(userId, mapping, System.currentTimeMillis()));
-
-        List<Map<String, Object>> mappingList = new ArrayList<>();
-        for (int digit = 1; digit <= 5; digit++) {
-            Map<String, Object> entry = new HashMap<>();
-            entry.put("digit", digit);
-            entry.put("gestureId", mapping.get(String.valueOf(digit)));
-            mappingList.add(entry);
-        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("challengeId", challengeId);
@@ -182,10 +182,10 @@ public class AuthController {
             @RequestBody Map<String, Object> body) {
 
         @SuppressWarnings("unchecked")
-        List<String> gestureSequence = (List<String>) body.get("gestureSequence");
+        List<Integer> fingerSequence = (List<Integer>) body.get("fingerSequence");
 
-        if (gestureSequence == null || gestureSequence.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "gestureSequence required");
+        if (fingerSequence == null || fingerSequence.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fingerSequence required");
         }
 
         ChallengeData challenge = challenges.get(challengeId);
@@ -202,16 +202,16 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User mismatch");
         }
 
-        Map<String, String> gestureToDigit = new HashMap<>();
+        Map<Integer, Integer> showToDigit = new HashMap<>();
         for (Map.Entry<String, Object> e : challenge.mapping.entrySet()) {
-            gestureToDigit.put((String) e.getValue(), e.getKey());
+            showToDigit.put((Integer) e.getValue(), Integer.parseInt(e.getKey()));
         }
 
         StringBuilder enteredDigits = new StringBuilder();
-        for (String g : gestureSequence) {
-            String digit = gestureToDigit.get(g);
+        for (int shownFingers : fingerSequence) {
+            Integer digit = showToDigit.get(shownFingers);
             if (digit == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown gesture: " + g);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid finger count: " + shownFingers);
             }
             enteredDigits.append(digit);
         }
