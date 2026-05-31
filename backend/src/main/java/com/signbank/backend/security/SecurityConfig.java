@@ -60,6 +60,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/operator/cards/toggle-block").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/operator/cards/replace").permitAll()
 
+                // ── Fraud detection ───────────────────────────────────────────
+                .requestMatchers("/api/fraud/**").permitAll()
+
+                // ── Transactions ──────────────────────────────────────────────
+                .requestMatchers(HttpMethod.POST, "/api/transactions").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/transactions").permitAll()
+
                 // ── Everything else requires auth ─────────────────────────────
                 .anyRequest().authenticated()
             )

@@ -46,6 +46,9 @@ public class Card {
     public Boolean getReplaceRequested() { return replaceRequested; }
     public void setReplaceRequested(Boolean replaceRequested) { this.replaceRequested = replaceRequested; }
 
+    public Double getTransactionLimit() { return transactionLimit; }
+    public void setTransactionLimit(Double transactionLimit) { this.transactionLimit = transactionLimit; }
+
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 }

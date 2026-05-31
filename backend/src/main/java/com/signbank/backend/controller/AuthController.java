@@ -6,12 +6,16 @@ import com.signbank.backend.entity.User;
 import com.signbank.backend.repository.UserRepository;
 import com.signbank.backend.security.JwtUtil;
 import com.signbank.backend.service.AuthService;
+import com.signbank.backend.service.FraudDetectionEngine;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,6 +26,7 @@ public class AuthController {
     private final UserRepository  userRepo;
     private final JwtUtil         jwtUtil;
     private final AuthService     authService;
+    private final FraudDetectionEngine fraudEngine;
     private final Map<String, ChallengeData> challenges = new ConcurrentHashMap<>();
     private static final long CHALLENGE_TTL_MS = 300_000;
 
@@ -32,21 +37,29 @@ public class AuthController {
     public AuthController(
             UserRepository  userRepo,
             JwtUtil         jwtUtil,
-            AuthService     authService
+            AuthService     authService,
+            FraudDetectionEngine fraudEngine
     ) {
         this.userRepo        = userRepo;
         this.jwtUtil         = jwtUtil;
         this.authService     = authService;
+        this.fraudEngine     = fraudEngine;
     }
 
     @PostMapping("/login")
     public ResponseEntity<String> login(
             @RequestParam(name = "userId",   required = true)  String userId,
-            @RequestParam(name = "password", required = false) String password
+            @RequestParam(name = "password", required = false) String password,
+            HttpServletRequest request
     ) {
+        String fingerprint = getDeviceFingerprint(request);
+
         User user = userRepo.findById(userId)
-                .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> {
+                    fraudEngine.evaluateLogin(userId, fingerprint,
+                        request.getRemoteAddr(), request.getHeader("User-Agent"), false);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+                });
 
         final String roleName = user.getRole() != null
                 ? user.getRole().getRoleName().toUpperCase()
@@ -56,18 +69,26 @@ public class AuthController {
             final String stored = user.getPasswordHash();
 
             if (stored == null || stored.isBlank()) {
+                fraudEngine.evaluateLogin(userId, fingerprint,
+                    request.getRemoteAddr(), request.getHeader("User-Agent"), false);
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                         "No password set for this user — please set a password first");
             }
 
             if (!stored.equals(password)) {
+                fraudEngine.evaluateLogin(userId, fingerprint,
+                    request.getRemoteAddr(), request.getHeader("User-Agent"), false);
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong password");
             }
 
+            fraudEngine.evaluateLogin(userId, fingerprint,
+                request.getRemoteAddr(), request.getHeader("User-Agent"), true);
             String token = jwtUtil.generateToken(user.getUserId(), roleName);
             return ResponseEntity.ok(token);
         }
 
+        fraudEngine.evaluateLogin(userId, fingerprint,
+            request.getRemoteAddr(), request.getHeader("User-Agent"), true);
         if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
             return ResponseEntity.ok("FIRST_LOGIN");
         } else {
@@ -103,7 +124,8 @@ public class AuthController {
     @PostMapping("/verify-credential")
     public ResponseEntity<Map<String, Object>> verifyCredential(
             @RequestParam(name = "userId")     String userId,
-            @RequestParam(name = "credential") String credential
+            @RequestParam(name = "credential") String credential,
+            HttpServletRequest request
     ) {
         User user = userRepo.findById(userId)
                 .orElseThrow(() ->
@@ -122,6 +144,8 @@ public class AuthController {
         }
 
         if (!stored.equals(credential)) {
+            fraudEngine.evaluateFailedGesture(userId, getDeviceFingerprint(request),
+                request.getRemoteAddr(), request.getHeader("User-Agent"));
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credential");
         }
 
@@ -179,7 +203,10 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> verifyChallenge(
             @RequestParam String challengeId,
             @RequestParam String userId,
-            @RequestBody Map<String, Object> body) {
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest request) {
+
+        String fingerprint = getDeviceFingerprint(request);
 
         @SuppressWarnings("unchecked")
         List<Integer> fingerSequence = (List<Integer>) body.get("fingerSequence");
@@ -190,15 +217,21 @@ public class AuthController {
 
         ChallengeData challenge = challenges.get(challengeId);
         if (challenge == null) {
+            fraudEngine.evaluateFailedGesture(userId, fingerprint,
+                request.getRemoteAddr(), request.getHeader("User-Agent"));
             throw new ResponseStatusException(HttpStatus.GONE, "Challenge expired or invalid");
         }
 
         if (System.currentTimeMillis() - challenge.createdAt > CHALLENGE_TTL_MS) {
             challenges.remove(challengeId);
+            fraudEngine.evaluateFailedGesture(userId, fingerprint,
+                request.getRemoteAddr(), request.getHeader("User-Agent"));
             throw new ResponseStatusException(HttpStatus.GONE, "Challenge expired");
         }
 
         if (!challenge.userId.equals(userId)) {
+            fraudEngine.evaluateFailedGesture(userId, fingerprint,
+                request.getRemoteAddr(), request.getHeader("User-Agent"));
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User mismatch");
         }
 
@@ -227,6 +260,8 @@ public class AuthController {
         String storedDigits = passwordToDigits(storedPassword);
 
         if (!storedDigits.equals(enteredDigits.toString())) {
+            fraudEngine.evaluateFailedGesture(userId, fingerprint,
+                request.getRemoteAddr(), request.getHeader("User-Agent"));
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong gesture password");
         }
 
@@ -249,6 +284,22 @@ public class AuthController {
             }
         }
         return digits.toString();
+    }
+
+    private String getDeviceFingerprint(HttpServletRequest request) {
+        try {
+            String ip = request.getRemoteAddr();
+            String ua = request.getHeader("User-Agent");
+            if (ua == null) ua = "";
+            String raw = ip + "|" + ua;
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(raw.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) hex.append(String.format("%02x", b));
+            return hex.toString();
+        } catch (Exception e) {
+            return request.getRemoteAddr();
+        }
     }
 
     private record ChallengeData(String userId, Map<String, Object> mapping, long createdAt) {}

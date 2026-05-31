@@ -57,3 +57,17 @@ MERGE INTO interaction_log (interaction_id, command_id, user_id, gesture_id, exe
 ('L004', 'C002', '1111', 'G008', '2024-03-01T12:00:00Z', 'success', 'Logged out'),
 ('L005', 'C006', '2212', 'G008', '2024-03-02T09:00:00Z', 'success', 'Logged out'),
 ('L006', 'C001', '1212', 'G002', '2024-03-02T10:00:00Z', 'failed', 'Gesture not recognized');
+
+-- ── AI Fraud Detection — seed rules ─────────────────────────────────────────
+MERGE INTO alert_rules (rule_id, name, category, description, enabled, severity, params) KEY (rule_id) VALUES
+('R01', 'Brute Force Login', 'LOGIN', 'More than 3 failed logins in 5 minutes', TRUE, 'HIGH', '{"maxFailures":3,"windowMinutes":5}'),
+('R02', 'Off-Hours Login', 'LOGIN', 'Login between 11 PM and 5 AM', TRUE, 'MEDIUM', '{"startHour":23,"endHour":5}'),
+('R03', 'New Device Login', 'LOGIN', 'Login from a device never seen before', TRUE, 'MEDIUM', '{}'),
+('R04', 'Gesture Spam', 'LOGIN', 'More than 5 failed gesture attempts in 2 minutes', TRUE, 'HIGH', '{"maxFailed":5,"windowMinutes":2}'),
+('R05', 'High-Value Transaction', 'TRANSACTION', 'Amount more than 3x the user average', TRUE, 'HIGH', '{"multiplier":3.0}'),
+('R06', 'Unusual Transaction Type', 'TRANSACTION', 'Transaction type different from usual pattern', TRUE, 'MEDIUM', '{}'),
+('R07', 'First Transaction', 'TRANSACTION', 'User has never done a transaction before', TRUE, 'LOW', '{}'),
+('R08', 'Over Limit', 'TRANSACTION', 'Amount exceeds card or user limit', TRUE, 'CRITICAL', '{}'),
+('R09', 'High Transaction Velocity', 'VELOCITY', 'More than 3 transactions in 1 minute', TRUE, 'HIGH', '{"maxTransactions":3,"windowMinutes":1}'),
+('R10', 'Multiple IPs', 'VELOCITY', 'Same user active from multiple IPs in 1 minute', TRUE, 'CRITICAL', '{"windowMinutes":1}'),
+('R11', 'Gesture Velocity', 'VELOCITY', 'More than 10 gesture events per minute', TRUE, 'MEDIUM', '{"maxGestures":10,"windowMinutes":1}');

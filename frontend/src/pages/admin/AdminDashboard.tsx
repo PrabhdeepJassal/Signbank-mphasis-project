@@ -10,6 +10,7 @@ const cards = [
   { label: 'Manage Pages',    abbr: 'PGS', color: '#7c3aed', path: '/admin/pages' },
   { label: 'View Analytics',  abbr: 'ANL', color: '#db2777', path: '/admin/analytics' },
   { label: 'Manage Mappings', abbr: 'MAP', color: '#0284c7', path: '/admin/mappings' },
+  { label: 'Fraud Detection', abbr: 'FRA', color: '#ef4444', path: '/admin/fraud' },
 ];
 
 export default function AdminDashboard() {

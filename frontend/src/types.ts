@@ -74,3 +74,43 @@ export interface InteractionLog {
   status: string;
   metadata: string;
 }
+
+export interface FraudAlert {
+  alertId: string;
+  ruleId: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  status: 'NEW' | 'ACKNOWLEDGED' | 'RESOLVED';
+  userId: string;
+  message: string;
+  details: string;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface AlertRule {
+  ruleId: string;
+  name: string;
+  category: 'LOGIN' | 'TRANSACTION' | 'VELOCITY';
+  description: string;
+  enabled: boolean;
+  severity: string;
+  params: string;
+}
+
+export interface Transaction {
+  transactionId: string;
+  userId: string;
+  amount: number;
+  type: string;
+  description: string;
+  status: string;
+  timestamp: string;
+}
+
+export interface FraudAnalytics {
+  totalAlerts: number;
+  activeAlerts: number;
+  resolvedAlerts: number;
+  alertsBySeverity: Record<string, number>;
+  alertTrend: Array<{ date: string; count: number }>;
+}

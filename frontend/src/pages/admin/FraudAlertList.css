@@ -1,0 +1,300 @@
+.fraud-alert-list {
+  max-width: 1100px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+.fraud-alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  border-bottom: 1.5px solid var(--border-light);
+  padding-bottom: 24px;
+}
+
+.fraud-alert-header h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff, var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+}
+
+.fraud-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.fraud-filters select {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: all var(--t);
+}
+
+.fraud-filters select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.fraud-table-card {
+  background: rgba(13, 20, 45, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.fraud-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 950px;
+}
+
+.fraud-table thead {
+  background: rgba(8, 13, 33, 0.85);
+}
+
+.fraud-table th {
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--primary-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.fraud-table th:first-child {
+  border-radius: var(--r-lg) 0 0 0;
+}
+
+.fraud-table th:last-child {
+  border-radius: 0 var(--r-lg) 0 0;
+}
+
+.fraud-table td {
+  padding: 14px 20px;
+  font-size: 0.86rem;
+  color: var(--text2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all var(--t);
+}
+
+.fraud-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.fraud-table tbody tr:hover td {
+  background: rgba(139, 92, 246, 0.05);
+  color: #fff;
+}
+
+.fraud-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.fraud-msg-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fraud-time-cell {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--text3);
+}
+
+.fraud-cell-id {
+  font-weight: 600;
+  color: var(--text);
+  font-family: monospace;
+}
+
+.fraud-empty {
+  text-align: center;
+  color: var(--text3);
+  padding: 3rem 2rem !important;
+  font-size: 0.9rem;
+}
+
+.fraud-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.fraud-action-btn {
+  padding: 6px 14px;
+  border-radius: var(--r-xs);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--t-spring);
+  white-space: nowrap;
+}
+
+.fraud-action-btn.acknowledge {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--info);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.fraud-action-btn.acknowledge:hover {
+  background: rgba(59, 130, 246, 0.25);
+  color: #fff;
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.fraud-action-btn.acknowledge:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.fraud-action-btn.resolve {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.fraud-action-btn.resolve:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.fraud-action-btn.resolve:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.fraud-count-label {
+  font-size: 0.82rem;
+  color: var(--text3);
+  align-self: center;
+  margin-left: auto;
+}
+
+.fraud-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 20px;
+  border-radius: var(--r-sm);
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  cursor: pointer;
+  transition: all var(--t-spring);
+}
+
+.fraud-clear-btn:hover {
+  background: rgba(244, 63, 94, 0.18);
+  color: #ff4d6d;
+  border-color: rgba(244, 63, 94, 0.4);
+  transform: translateY(-2px);
+}
+
+.fraud-clear-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.fraud-clear-modal p {
+  color: var(--text2);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.fraud-clear-warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  font-size: 0.82rem;
+  color: var(--warning);
+  background: var(--warning-bg);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--r-md);
+}
+
+.fraud-clear-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  border-radius: var(--r-sm);
+  background: var(--error);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all var(--t-spring);
+}
+
+.fraud-clear-confirm:hover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+}
+
+.fraud-clear-confirm:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.fraud-clear-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.sev-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+}
+
+.sev-badge.critical { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); }
+.sev-badge.high { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.2); }
+.sev-badge.medium { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-color: rgba(59, 130, 246, 0.2); }
+.sev-badge.low { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.2); }
+
+@media (max-width: 900px) {
+  .fraud-alert-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .fraud-table th,
+  .fraud-table td {
+    padding: 12px 14px;
+  }
+  .fraud-msg-cell {
+    max-width: 160px;
+  }
+}

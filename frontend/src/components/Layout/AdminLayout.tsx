@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import FraudAlertBanner from '../FraudAlertBanner';
 import type { ReactNode } from 'react';
 import './AdminLayout.css';
 
@@ -11,6 +12,7 @@ const navItems = [
   { label: 'Pages',       path: '/admin/pages',     icon: '▣' },
   { label: 'Mappings',    path: '/admin/mappings',  icon: '⇄' },
   { label: 'Analytics',   path: '/admin/analytics', icon: '◉' },
+  { label: 'Fraud',       path: '/admin/fraud',     icon: '⚠' },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -31,7 +33,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
         <div className="sidebar-nav" role="menubar" aria-orientation="vertical">
           {navItems.map(item => {
-            const active = location.pathname === item.path;
+            const active = location.pathname.startsWith(item.path);
             return (
               <button
                 key={item.path}
@@ -59,6 +61,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
+      <FraudAlertBanner />
       <main id="main-content" className="admin-main" role="main" aria-label="Admin content">
         {children}
       </main>
