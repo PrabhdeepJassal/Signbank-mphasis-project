@@ -122,14 +122,16 @@ export default function GestureLogin() {
   const handleGesture = useCallback((evt: GestureEvent) => {
     const cur = stepRef.current;
     if (cur === 'username') {
-      if (evt.type === 'DIGIT')      addDigit(evt.value);
-      if (evt.type === 'THUMB_UP')   submitUserId(digitsRef.current);
-      if (evt.type === 'THUMB_DOWN') backspaceDigit();
+      if (evt.type === 'DIGIT')       addDigit(evt.value);
+      if (evt.type === 'OPEN_PALM')   addDigit('5');
+      if (evt.type === 'THUMB_UP')    submitUserId(digitsRef.current);
+      if (evt.type === 'THUMB_DOWN')  backspaceDigit();
     }
     if (cur === 'challenge') {
-      if (evt.type === 'DIGIT')      addFingerCount(evt.value);
-      if (evt.type === 'THUMB_UP')   { const u = foundUserRef.current; const c = challenge; if (u && c) submitChallenge(pwdEntriesRef.current, u, c); }
-      if (evt.type === 'THUMB_DOWN') backspacePwd();
+      if (evt.type === 'DIGIT')       addFingerCount(evt.value);
+      if (evt.type === 'OPEN_PALM')   addFingerCount('5');
+      if (evt.type === 'THUMB_UP')    { const u = foundUserRef.current; const c = challenge; if (u && c) submitChallenge(pwdEntriesRef.current, u, c); }
+      if (evt.type === 'THUMB_DOWN')  backspacePwd();
     }
   }, [addDigit, backspaceDigit, submitUserId, addFingerCount, backspacePwd, submitChallenge, challenge]);
 
