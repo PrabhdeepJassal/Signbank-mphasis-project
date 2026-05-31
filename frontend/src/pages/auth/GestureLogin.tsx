@@ -97,9 +97,8 @@ export default function GestureLogin() {
   useEffect(() => { foundUserRef.current  = foundUser;  }, [foundUser]);
   useEffect(() => { loadingRef.current    = loading;    }, [loading]);
 
-  const passwordGestures = gestures.filter(
-    g => g.gestureId !== RESERVED.BACKSPACE && g.gestureId !== RESERVED.SIGNIN && g.gestureId !== RESERVED.FIST
-  );
+  const fingerGestures = ['G001','G002','G003','G004','G005'];
+  const passwordGestures = gestures.filter(g => fingerGestures.includes(g.gestureId));
 
   const addDigit = useCallback((d: string) => {
     const val = parseInt(d, 10);
@@ -224,7 +223,7 @@ export default function GestureLogin() {
   }, [addDigit, backspaceDigit, submitUserId, addGesture, backspacePwd, submitChallenge, goBack, challenge]);
 
   const passwordDigitEmojis = challenge
-    ? challenge.mapping.filter(m => m.digit >= 1 && m.digit <= 9)
+    ? challenge.mapping.filter(m => m.digit >= 1 && m.digit <= 5)
     : [];
 
   const enteredGestures = pwdEntries.map(e => {

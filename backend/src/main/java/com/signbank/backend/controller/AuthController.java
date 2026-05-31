@@ -26,7 +26,7 @@ public class AuthController {
     private static final long CHALLENGE_TTL_MS = 300_000;
 
     private static final String[] ALL_GESTURES = {
-        "G001","G002","G003","G004","G005","G006","G007","G008","G009"
+        "G001","G002","G003","G004","G005"
     };
 
     public AuthController(
@@ -152,14 +152,14 @@ public class AuthController {
         Collections.shuffle(shuffled);
 
         Map<String, Object> mapping = new LinkedHashMap<>();
-        for (int digit = 1; digit <= 9; digit++) {
+        for (int digit = 1; digit <= 5; digit++) {
             mapping.put(String.valueOf(digit), shuffled.get(digit - 1));
         }
 
         challenges.put(challengeId, new ChallengeData(userId, mapping, System.currentTimeMillis()));
 
         List<Map<String, Object>> mappingList = new ArrayList<>();
-        for (int digit = 1; digit <= 9; digit++) {
+        for (int digit = 1; digit <= 5; digit++) {
             Map<String, Object> entry = new HashMap<>();
             entry.put("digit", digit);
             entry.put("gestureId", mapping.get(String.valueOf(digit)));
