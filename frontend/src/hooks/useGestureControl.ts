@@ -251,7 +251,7 @@ export function useGestureControl(
   useEffect(() => {
     let cancelled = false, animId = 0, handsInst: any = null, stream: MediaStream | null = null;
     let gestureBuffer0: string[] = [], gestureBuffer1: string[] = [], bothThumbsDownBuffer: boolean[] = [];
-    let openPalmSeen = false, backStartTime: number | null = null;
+    let openPalmSeen = false, backStartTime: number | null = null, backFired = false;
     const BACK_HOLD_MS = 350;
     let lastFiredGesture = '', lastFiredTime = 0;
     let rockHoldStart: number | null = null, inSlider = false;
@@ -553,16 +553,20 @@ export function useGestureControl(
             }
 
             // BACK gesture from hand 0 only (OPEN_PALM → FIST held 350ms)
-            if (raw0 === 'OPEN_PALM') { openPalmSeen = true; backStartTime = null; }
-            else if (raw0 === 'FIST') {
-              if (openPalmSeen) {
-                if (!backStartTime) backStartTime = now;
-                else if (now - backStartTime >= BACK_HOLD_MS) {
-                  openPalmSeen = false; backStartTime = null;
-                  onGestureRef.current({ type: 'BACK_DYNAMIC', confidence: 100 });
-                  ctx.restore(); return;
-                }
+            // Use raw finger count to avoid classification quirks (thumb-up vs fist)
+            const f0 = countFingers(hands[0], handedness[0]?.label ?? 'Right');
+            if (f0 >= 4) {
+              openPalmSeen = true; backStartTime = null; backFired = false;
+            } else if (f0 <= 1 && openPalmSeen && !backFired) {
+              if (!backStartTime) backStartTime = now;
+              else if (now - backStartTime >= BACK_HOLD_MS) {
+                backFired = true;
+                openPalmSeen = false; backStartTime = null;
+                onGestureRef.current({ type: 'BACK_DYNAMIC', confidence: 100 });
+                ctx.restore(); return;
               }
+            } else if (f0 > 1 && f0 < 4) {
+              // Intermediate transition (2-3 fingers) — don't reset
             } else {
               openPalmSeen = false; backStartTime = null;
             }

@@ -96,3 +96,15 @@ CREATE TABLE IF NOT EXISTS card_replacements (
     CONSTRAINT fk_card_replacements_user
         FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+
+CREATE TABLE IF NOT EXISTS trained_gestures (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(20) NOT NULL,
+    slot_number INT NOT NULL,
+    slot_label VARCHAR(100),
+    landmarks TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_trained_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT uq_user_slot UNIQUE (user_id, slot_number)
+);

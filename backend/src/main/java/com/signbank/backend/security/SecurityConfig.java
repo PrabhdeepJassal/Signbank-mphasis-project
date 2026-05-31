@@ -50,6 +50,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/operator/set-limit").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/operator/set-limit").permitAll()
 
+                // ── Operator — trained gestures ──────────────────────────────
+                .requestMatchers(HttpMethod.GET,    "/api/operator/trained-gestures/**").permitAll()
+                .requestMatchers(HttpMethod.POST,   "/api/operator/trained-gestures/**").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/api/operator/trained-gestures/**").permitAll()
+
                 // ── Operator — card operations ────────────────────────────────
                 .requestMatchers(HttpMethod.GET,  "/api/operator/cards").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/operator/cards/toggle-block").permitAll()

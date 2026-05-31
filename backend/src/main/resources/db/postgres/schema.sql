@@ -61,6 +61,18 @@ CREATE TABLE IF NOT EXISTS command_mapping (
     CONSTRAINT uq_mapping_unique UNIQUE (role_id, gesture_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS trained_gestures (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(20) NOT NULL,
+    slot_number INT NOT NULL,
+    slot_label VARCHAR(100),
+    landmarks TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_trained_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT uq_user_slot UNIQUE (user_id, slot_number)
+);
+
 CREATE TABLE IF NOT EXISTS interaction_log (
     interaction_id VARCHAR(10) PRIMARY KEY,
     command_id VARCHAR(10) NOT NULL,
