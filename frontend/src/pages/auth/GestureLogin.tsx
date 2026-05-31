@@ -63,25 +63,15 @@ export default function GestureLogin() {
     try {
       const res  = await apiClient.post<string>('/api/auth/login', null, { params: { userId: id } });
       const body = (typeof res.data === 'string' ? res.data : String(res.data)).trim();
-
       if (body !== 'FIRST_LOGIN' && body !== 'PASSWORD_REQUIRED') { setError('Unexpected response'); return; }
-
       if (body === 'FIRST_LOGIN') {
-        const user = { userId: id, username: id, email: '', roleId: 'R001', roleName: 'operator', createdAt: '', passwordSet: false };
-        login(user, '');
+        login({ userId: id, username: id, email: '', roleId: 'R001', roleName: 'operator', createdAt: '', passwordSet: false }, '');
         navigate('/set-password');
         return;
       }
-
       let roleName = 'operator';
-      try {
-        const ur = await apiClient.get<any[]>('/api/admin/users');
-        const u  = ur.data.find((x: any) => String(x.userId) === id);
-        if (u) roleName = (u.roleName ?? 'operator').toLowerCase();
-      } catch { /* keep defaults */ }
-
+      try { const ur = await apiClient.get<any[]>('/api/admin/users'); const u = ur.data.find((x: any) => String(x.userId) === id); if (u) roleName = (u.roleName ?? 'operator').toLowerCase(); } catch {}
       if (roleName.includes('admin')) { setError('Admin accounts must use the Admin Login page'); return; }
-
       const chalResp = await apiClient.post<ChallengeData>('/api/auth/challenge', null, { params: { userId: id } });
       setFoundUser({ userId: id, roleId: 'R001', roleName });
       setChallenge(chalResp.data);
@@ -91,7 +81,7 @@ export default function GestureLogin() {
       const s = err?.response?.status;
       if      (s === 404) setError('User ID not found');
       else if (s === 401) setError('Access denied — use Admin Login');
-      else                setError('User ID not found — check your ID');
+      else                setError('User ID not found');
     } finally { setLoading(false); }
   }, [login, navigate]);
 
@@ -100,15 +90,12 @@ export default function GestureLogin() {
     setPwdEntries(prev => [...prev, { fingers: fingerCount }]);
   }, []);
 
-  const backspacePwd = useCallback(() => {
-    setPwdEntries(prev => prev.slice(0, -1));
-  }, []);
+  const backspacePwd = useCallback(() => setPwdEntries(prev => prev.slice(0, -1)), []);
 
   const submitChallenge = useCallback(async (currentEntries: typeof pwdEntries, user: FoundUser, chal: ChallengeData) => {
     if (currentEntries.length < MIN_PWD) { setError('Enter at least 1 finger gesture'); return; }
     if (loadingRef.current) return;
     setLoading(true); setError('');
-
     try {
       const res = await apiClient.post<{ token: string; status: string }>(
         `/api/auth/verify-challenge?challengeId=${chal.challengeId}&userId=${user.userId}`,
@@ -116,14 +103,14 @@ export default function GestureLogin() {
       );
       const { token } = res.data;
       let role = user.roleName;
-      try { const payload = JSON.parse(atob(token.split('.')[1])); role = (payload.role ?? role).toString().toLowerCase(); } catch { }
+      try { const payload = JSON.parse(atob(token.split('.')[1])); role = (payload.role ?? role).toString().toLowerCase(); } catch {}
       login({ userId: user.userId, username: user.userId, email: '', roleId: user.roleId, roleName: role, createdAt: '', passwordSet: true }, token);
       navigate(role.includes('operator') ? '/operator/dashboard' : '/viewer/dashboard');
     } catch (err: any) {
       const s = err?.response?.status;
       if (s === 401 || s === 403) setError('Wrong gesture password — try again');
       else if (s === 410) setError('Challenge expired — start again');
-      else setError('Login failed — retry');
+      else setError('Login failed');
     } finally { setLoading(false); }
   }, [login, navigate]);
 
@@ -150,88 +137,89 @@ export default function GestureLogin() {
 
   return (
     <div className="gl" role="main">
-      <header className="gl-top">
-        <div className="gl-top-left">
-          {step === 'challenge' && <button className="gl-back" onClick={goBack}>← Back</button>}
-        </div>
-        <span className="gl-brand">SignBank <span className="gl-brand-sub">· Gesture Login</span></span>
-        <div />
-      </header>
+      <div className="gl-center">
+        <div className="gl-card">
+          <div className="gl-camera-wrap">
+            <GestureCamera onGesture={handleGesture} />
+          </div>
 
-      <div className="gl-body">
-        <div className="gl-camera-col">
-          <GestureCamera onGesture={handleGesture} />
-        </div>
+          <div className="gl-content">
+            {step === 'challenge' && (
+              <button className="gl-back" onClick={goBack}>← Back to ID</button>
+            )}
 
-        <div className="gl-panel-col">
-          {step === 'username' && (
-            <div className="gl-step">
-              <span className="gl-badge">Step 1</span>
-              <h2>Enter User ID</h2>
-              <div className="gl-digit-boxes">
-                {[0,1,2,3].map(i => (
-                  <div key={i} className={`gl-digit-box ${digits[i] ? 'filled' : ''}`}>{digits[i] || ''}</div>
-                ))}
-              </div>
-              <div className="gl-digit-grid">
-                {['1','2','3','4','5','6','7','8','9','10'].map(d => (
-                  <button key={d} className="gl-dbtn" onClick={() => addDigit(d)}>
-                    <span>{FINGER_EMOJIS[d]}</span>
-                    <small>{d}</small>
-                  </button>
-                ))}
-                <button className="gl-dbtn action" onClick={backspaceDigit}>👎 <small>BS</small></button>
-              </div>
-              {error && <div className="gl-err">⚠ {error}</div>}
-              <button className="gl-submit" onClick={() => submitUserId(digitsRef.current)} disabled={loading || digits.length < 4}>
-                {loading ? 'Checking…' : 'Confirm ID  👍'}
-              </button>
-              <p className="gl-demo">Demo: <strong>1111</strong> · <strong>2111</strong></p>
-            </div>
-          )}
-
-          {step === 'challenge' && challenge && (
-            <div className="gl-step">
-              <span className="gl-badge">Step 2</span>
-              <h2>Shuffled Challenge</h2>
-              <p className="gl-user">{foundUser?.userId}</p>
-
-              <div className="gl-chal-grid">
-                {challenge.mapping.filter(m => m.digit <= 10).map(m => (
-                  <div key={m.digit} className="gl-chal-row">
-                    <span className="gl-chal-digit">{m.digit}</span>
-                    <span className="gl-chal-arr">→</span>
-                    <span className="gl-chal-emoji">{m.emoji}</span>
-                    <span className="gl-chal-label">{m.show}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="gl-entered">
-                {enteredFingers.length === 0
-                  ? <span className="gl-entered-empty">Enter finger count...</span>
-                  : enteredFingers.map((e, i) => <span key={i} className="gl-entered-chip">{e}</span>)
-                }
-              </div>
-
-              <div className="gl-finger-grid">
-                {['1','2','3','4','5','6','7','8','9','10'].map(d => (
-                  <button key={d} className="gl-fbtn" onClick={() => addFingerCount(d)}>
-                    <span>{FINGER_EMOJIS[d]}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="gl-actions">
-                <button className="gl-act backspace" onClick={backspacePwd}>👎</button>
-                <button className="gl-act clear" onClick={() => setPwdEntries([])}>✕</button>
-                <button className="gl-submit compact" onClick={() => { const u = foundUserRef.current; const c = challenge; if (u && c) submitChallenge(pwdEntriesRef.current, u, c); }} disabled={pwdEntries.length < MIN_PWD || loading}>
-                  {loading ? '…' : 'Submit  👍'}
+            {step === 'username' && (
+              <>
+                <span className="gl-badge">Step 1</span>
+                <h2>Enter User ID</h2>
+                <div className="gl-digit-boxes">
+                  {[0,1,2,3].map(i => (
+                    <div key={i} className={`gl-digit-box ${digits[i] ? 'filled' : ''}`}>{digits[i] || ''}</div>
+                  ))}
+                </div>
+                <div className="gl-digit-grid">
+                  {['1','2','3','4','5','6','7','8','9','10'].map(d => (
+                    <button key={d} className="gl-dbtn" onClick={() => addDigit(d)}>
+                      <span>{FINGER_EMOJIS[d]}</span>
+                      <small>{d}</small>
+                    </button>
+                  ))}
+                  <button className="gl-dbtn action" onClick={backspaceDigit}>👎</button>
+                </div>
+                {error && <div className="gl-err">⚠ {error}</div>}
+                <button className="gl-submit" onClick={() => submitUserId(digitsRef.current)} disabled={loading || digits.length < 4}>
+                  {loading ? 'Checking…' : 'Confirm ID  👍'}
                 </button>
-              </div>
-              {error && <div className="gl-err">⚠ {error}</div>}
-            </div>
-          )}
+                <p className="gl-demo">Demo: <strong>1111</strong> (operator) · <strong>2111</strong> (viewer)</p>
+              </>
+            )}
+
+            {step === 'challenge' && challenge && (
+              <>
+                <div className="gl-chal-top">
+                  <span className="gl-badge">Step 2</span>
+                  <span className="gl-user">{foundUser?.userId}</span>
+                </div>
+                <h2>Shuffled Finger Challenge</h2>
+
+                <div className="gl-chal-grid">
+                  {challenge.mapping.filter(m => m.digit <= 10).map(m => (
+                    <div key={m.digit} className="gl-chal-row">
+                      <span className="gl-chal-digit">{m.digit}</span>
+                      <span className="gl-chal-arr">→</span>
+                      <span className="gl-chal-emoji">{m.emoji}</span>
+                      <span className="gl-chal-label">{m.show} finger{m.show > 1 ? 's' : ''}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="gl-entered">
+                  {enteredFingers.length === 0
+                    ? <span className="gl-entered-empty">Your entered finger counts appear here...</span>
+                    : enteredFingers.map((e, i) => <span key={i} className="gl-entered-chip">{e}</span>)
+                  }
+                </div>
+
+                <div className="gl-finger-grid">
+                  {['1','2','3','4','5','6','7','8','9','10'].map(d => (
+                    <button key={d} className="gl-fbtn" onClick={() => addFingerCount(d)}>
+                      <span>{FINGER_EMOJIS[d]}</span>
+                      <small>{d}</small>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="gl-actions">
+                  <button className="gl-act backspace" onClick={backspacePwd}>👎 Back</button>
+                  <button className="gl-act clear" onClick={() => setPwdEntries([])}>✕ Clear</button>
+                  <button className="gl-submit" onClick={() => { const u = foundUserRef.current; const c = challenge; if (u && c) submitChallenge(pwdEntriesRef.current, u, c); }} disabled={pwdEntries.length < MIN_PWD || loading}>
+                    {loading ? '…' : 'Submit  👍'}
+                  </button>
+                </div>
+                {error && <div className="gl-err">⚠ {error}</div>}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
