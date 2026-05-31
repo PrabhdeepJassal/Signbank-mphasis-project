@@ -226,11 +226,11 @@ public class AuthController {
 
         String storedDigits = passwordToDigits(storedPassword);
 
-        challenges.remove(challengeId);
-
         if (!storedDigits.equals(enteredDigits.toString())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong gesture password");
         }
+
+        challenges.remove(challengeId);
 
         final String roleName = user.getRole() != null
                 ? user.getRole().getRoleName().toUpperCase()
