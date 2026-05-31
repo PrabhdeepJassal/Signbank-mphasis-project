@@ -1,269 +1,379 @@
-# SignBank Enterprise
+# SignBank Enterprise — Gesture-Driven Banking Platform
 
-A gesture-driven smart interaction platform. Users control banking operations through hand gestures captured via webcam — no mouse, no keyboard.
+A **gesture-driven smart banking platform** where users control banking operations entirely through **hand gestures captured via webcam**. No mouse, no keyboard — just your hands.
 
-- **Frontend:** React 19 + TypeScript + Vite
-- **Backend:** Spring Boot 4.0 + Java 21
-- **Database:** H2 (file-based, default) / PostgreSQL 16 (optional)
-- **Gesture Detection:** MediaPipe Hands (browser) + OpenCV (server-side finger tracking)
+Built for **Mphasis** as an enterprise-grade proof-of-concept for accessible, touchless banking interaction using AI-powered computer vision.
 
 ---
 
-## Quick Start (5 minutes)
+## 🔥 Key Features
 
-**Prerequisites:** Node.js >= 18, Java 21 JDK. No database install needed (uses H2 by default).
+### 🖐️ Gesture-Based Authentication
+- **Gesture Password Login** — Instead of typing a password, perform a sequence of hand gestures (e.g., "One Finger → Two Fingers → Three Fingers") captured via webcam
+- **Shuffled Challenge Login** — On each login, the system presents a random challenge (e.g., "Show 4 fingers") to prevent recording attacks
+- **Admin Login** — Traditional username/password for admin role
+- **JWT Token Auth** — All subsequent API calls authenticated via JWT
 
-```bash
-# 1. Clone & enter project
-git clone <repo-url> && cd Sign-Bank-Enterprise-mphasis-main
+### 🤖 AI Fraud Detection System
+- **11 Fraud Detection Rules** running on every login and transaction:
+  - Login anomaly detection (unusual times, locations)
+  - Transaction amount anomaly detection
+  - Velocity checking (too many actions in short time)
+  - Failed gesture attempt tracking
+  - Device fingerprint mismatch detection
+- **Real-time Fraud Alerts** — Instant alert generation with severity levels (LOW, MEDIUM, HIGH, CRITICAL)
+- **Alert Management UI** — View, acknowledge, and resolve alerts in the admin dashboard
+- **Fraud Analytics Dashboard** — Visual trends, rule performance metrics, geo-distribution maps
+- **Custom Alert Rules** — Admins can configure threshold rules (e.g., alert if >5 failed attempts in 10 minutes)
+- **Session Tracking** — Every user session is logged with IP, device fingerprint, and user agent
 
-# 2. Install frontend deps
-cd frontend && npm install && cd ..
+### ✋ Gesture Control & Navigation
+- **10 Built-in Gestures:**
+  | ID | Gesture | Action |
+  |----|---------|--------|
+  | G001 | One Finger | Select / Confirm |
+  | G002 | Two Fingers | Navigate Right / Next |
+  | G003 | Three Fingers | Navigate Left / Back |
+  | G004 | Closed Middle Two Fingers | Cancel / Close |
+  | G005 | Open Palm | Stop / Home |
+  | G006 | Thumbs Up | Confirm / Yes |
+  | G007 | Thumbs Down | Reject / No |
+  | G008 | Fist | Emergency Lock |
+  | G009 | Middle Two Closed | Menu / Options |
+  | G010 | Victory (✌️) | Custom Action |
+- **Global Gesture Navigation** — Navigate the entire app using gestures, works across all pages
+- **Per-Page Command Mapping** — Admins can map which gestures trigger which commands on each page
+- **Gesture Training** — Users can register and train custom gesture patterns
+- **AR Onboarding Guide** — Interactive tutorial that teaches gesture controls via camera overlay
 
-# 3. Build & run backend (auto-creates tables + seeds demo data)
-cd backend && ./mvnw spring-boot:run
+### 🔐 Card Management
+- **View Cards** — List all cards with status, type, and limits
+- **Block / Unblock Cards** — Instantly block or unblock a card using gestures
+- **Card Replacement** — Request and track card replacements
+- **Set Transaction Limits** — Use finger tracking (OpenCV) to slide a limit selector visually
 
-# 4. In another terminal, start frontend
-cd frontend && npm run dev
-```
+### 👥 Multi-Role System
+| Role | Access | Login Method |
+|------|--------|-------------|
+| **Admin** | Full platform management, user CRUD, fraud dashboard, analytics | Username + Password |
+| **Operator** | Banking operations: balance, cards, limits, transactions | Gesture password |
+| **Viewer** | Read-only: dashboard, logs, personal analytics | Gesture password |
 
-> **Database is fully automatic** — Uses H2 file-based DB (stored in `backend/data/signbankdb.mv.db`). Tables and demo data are created on first run. No PostgreSQL needed. To reset, delete the `backend/data/` folder and restart.
+### 📊 Analytics & Monitoring
+- **Admin Analytics** — Platform-wide interaction statistics, gesture usage heatmaps
+- **Viewer Analytics** — Personal usage patterns and history
+- **Fraud Analytics Dashboard** — Alert trends, rule effectiveness, geographic distribution
+- **Interaction Logs** — Complete audit trail of all gesture events and system actions
 
-Open **http://localhost:5173** in a browser with a webcam.
+### 🛡️ Security Features
+- **JWT Authentication** with token expiry and refresh flow
+- **Password Hashing** — bcrypt for admin passwords
+- **Gesture Challenge Login** — Randomized challenges prevent replay attacks
+- **Fraud Detection Engine** — Real-time evaluation of login and transaction patterns
+- **Session Management** — Track and monitor active user sessions
+- **Rate Limiting** — Prevent brute-force gesture attempts
+- **Device Fingerprinting** — Detect unusual devices accessing accounts
 
 ---
 
-## Project Structure
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 19 + TypeScript + Vite |
+| **Backend** | Spring Boot 4.0 + Java 21 |
+| **Database** | H2 (default, zero-setup) / PostgreSQL 16 (production) |
+| **Gesture Detection** | MediaPipe Hands (browser, client-side) |
+| **Finger Tracking** | OpenCV (server-side, for limit slider) |
+| **Auth** | JWT (jjwt library) |
+| **Build** | Maven (via wrapper `mvnw`) |
+| **Migrations** | Flyway |
+| **AI/ML** | Custom fraud detection engine with 11 rules |
+
+---
+
+## 📁 Project Structure
 
 ```
 .
-├── frontend/                    # React + TypeScript + Vite
+├── frontend/                          # React 19 + TypeScript + Vite
 │   ├── src/
-│   │   ├── api/                 # Axios HTTP client modules
-│   │   ├── components/          # Reusable UI (GestureCamera, Layouts, Modal)
-│   │   ├── context/             # AuthContext, DataContext
-│   │   ├── hooks/               # useGestureControl, useGlobalGestureNav
-│   │   ├── pages/               # Page components by role
-│   │   │   ├── auth/            # Login, Landing, SetPassword
-│   │   │   ├── admin/           # Dashboard, CRUD pages, Analytics
-│   │   │   ├── operator/        # Dashboard, Balance, Cards, Limits
-│   │   │   └── viewer/          # Dashboard, Logs, Analytics
-│   │   ├── routes/              # ProtectedRoute guard
-│   │   ├── App.tsx              # Router setup
-│   │   └── main.tsx             # Entry point
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── .env.example
+│   │   ├── api/                       # Axios HTTP client modules (7 API modules)
+│   │   │   ├── adminApi.ts            # Admin CRUD operations
+│   │   │   ├── authApi.ts             # Login, registration, gesture verification
+│   │   │   ├── cardApi.ts             # Card management
+│   │   │   ├── fraudApi.ts            # Fraud alerts & analytics
+│   │   │   ├── gestureApi.ts          # Gesture event submission
+│   │   │   ├── logsApi.ts             # Interaction logs
+│   │   │   └── transactionsApi.ts     # Transaction operations
+│   │   ├── components/
+│   │   │   ├── ARGuide/               # Camera overlay onboarding tutorial
+│   │   │   ├── GestureCamera/         # MediaPipe hand tracking camera component
+│   │   │   ├── Layout/                # Admin & Portal layout shells
+│   │   │   ├── ui/                    # Reusable Modal component
+│   │   │   ├── FraudAlertBanner.tsx   # Real-time fraud alert notification
+│   │   │   └── *                      # Other shared components
+│   │   ├── context/
+│   │   │   ├── AuthContext.tsx         # Auth state management
+│   │   │   ├── DataContext.tsx         # Global data state
+│   │   │   └── FraudContext.tsx        # Fraud alert state
+│   │   ├── hooks/
+│   │   │   ├── useGestureControl.ts   # Per-page gesture binding
+│   │   │   ├── useGlobalGestureNav.ts # Global gesture navigation
+│   │   │   └── useARGuide.ts          # AR tutorial state
+│   │   ├── pages/
+│   │   │   ├── auth/                  # Login, Landing, SetPassword
+│   │   │   ├── admin/                 # (9 pages) Dashboard, Users, Gestures, Pages,
+│   │   │   │                          # Commands, Mappings, Analytics, Fraud Dashboard,
+│   │   │   │                          # Fraud Alert List, Fraud Rule Editor
+│   │   │   ├── operator/              # (6 pages) Dashboard, Balance, Cards,
+│   │   │   │                          # Card Actions, Set Limit, Set Limit Modal
+│   │   │   └── viewer/                # (3 pages) Dashboard, Logs, Analytics
+│   │   ├── routes/ProtectedRoute.tsx  # Role-based route guarding
+│   │   ├── utils/
+│   │   │   ├── eyeAspectRatio.ts      # Eye tracking utility
+│   │   │   └── sound.ts               # Sound feedback for gestures
+│   │   └── types.ts                   # Shared TypeScript interfaces
+│   ├── dist/                          # Production build output
+│   └── package.json
 │
-├── backend/                     # Spring Boot 4 + Java 21
+├── backend/                           # Spring Boot 4 + Java 21
 │   ├── src/main/java/com/signbank/backend/
-│   │   ├── controller/          # REST endpoints
-│   │   ├── service/             # Business logic
-│   │   ├── entity/              # JPA entities
-│   │   ├── repository/          # Spring Data repositories
-│   │   ├── dto/
-│   │   │   ├── request/         # Request DTOs (13 files)
-│   │   │   └── response/        # Response DTOs (12 files)
-│   │   ├── mapper/              # Entity ↔ DTO mappers
-│   │   ├── security/            # JWT auth, SecurityConfig
-│   │   └── exception/           # Custom exceptions
+│   │   ├── controller/                # (11 controllers) REST endpoints
+│   │   │   ├── AuthController.java    # Login, register, set password
+│   │   │   ├── AdminController.java   # Full CRUD for users, gestures, pages, commands
+│   │   │   ├── CardController.java    # Card operations
+│   │   │   ├── FraudController.java   # Fraud alerts, analytics, rule management
+│   │   │   ├── GestureController.java # Gesture event submission & querying
+│   │   │   ├── TransactionController.java # Transaction processing
+│   │   │   ├── LogController.java     # Interaction log queries
+│   │   │   ├── TestController.java    # Debug/test endpoints
+│   │   │   └── GlobalExceptionHandler.java
+│   │   ├── service/                   # Business logic
+│   │   │   ├── FraudDetectionEngine.java    # AI fraud evaluation engine
+│   │   │   ├── LoginAnomalyRule.java        # Login pattern anomaly detection
+│   │   │   ├── TransactionAnomalyRule.java  # Transaction amount anomaly detection
+│   │   │   ├── VelocityRule.java            # Velocity/rate checking
+│   │   │   ├── AlertManager.java            # Alert lifecycle management
+│   │   │   ├── AuthService.java             # Authentication logic
+│   │   │   ├── GestureService/Impl.java     # Gesture classification
+│   │   │   ├── CardService/Impl.java        # Card business logic
+│   │   │   ├── TransactionService.java      # Transaction processing
+│   │   │   ├── LogService.java              # Log querying
+│   │   │   ├── AdminService.java            # Admin operations
+│   │   │   ├── OpenCvFingerTrackingService.java # Server-side finger counting
+│   │   │   └── CustomUserDetailsService.java
+│   │   ├── entity/                   # (14 JPA entities)
+│   │   │   ├── User.java, Role.java, Card.java, Transaction.java
+│   │   │   ├── Gesture.java, Page.java, Command.java, CommandMapping.java
+│   │   │   ├── FraudAlert.java, AlertRule.java, CardReplacement.java
+│   │   │   ├── InteractionLog.java, UserSession.java
+│   │   ├── repository/               # (12 Spring Data repositories)
+│   │   ├── dto/request/              # (14 request DTOs)
+│   │   ├── dto/response/             # (13 response DTOs)
+│   │   ├── mapper/                   # Entity ↔ DTO mappers
+│   │   ├── security/                 # JWT auth filter, util, SecurityConfig
+│   │   └── exception/                # Custom exceptions
 │   ├── src/main/resources/
 │   │   ├── application.properties
-│   │   ├── db/migration/        # Flyway migrations (schema + seed)
-│   │   └── db/postgres/         # Reference SQL files
+│   │   ├── db/migration/
+│   │   │   ├── V1__initial_schema.sql    # Full database schema
+│   │   │   └── V2__seed_data.sql         # Demo data
+│   │   └── db/postgres/                  # PostgreSQL reference SQL
 │   ├── pom.xml
-│   └── mvnw                     # Maven wrapper
+│   └── mvnw                             # Maven wrapper (no install needed)
 │
-├── setup.sh                     # One-command bootstrap
-└── README.md
+├── setup.sh                        # One-command bootstrap script
+├── gesture_implementation_summary.pdf
+├── signbank_ar_ai_technical_proposal.md
+└── signbank_ar_ai_technical_proposal.pdf
 ```
 
 ---
 
-## Prerequisites
+## 🚀 Quick Start (5 Minutes)
 
-| Tool       | Version   | Check                |
-|------------|-----------|----------------------|
-| Node.js    | >= 18     | `node --version`     |
-| Java       | 21 (JDK)  | `java --version`     |
-| npm        | >= 9      | `npm --version`      |
-
-> **No Maven install needed** — the project ships with the Maven wrapper (`mvnw`).
-
----
-
-## Setup Options
-
-### Option A: Local Development (recommended — H2)
-
-No database setup needed. The default profile uses an embedded H2 database stored in `backend/data/`.
-
-**1. Backend:**
-```bash
-cd backend
-./mvnw spring-boot:run
-# Runs on http://localhost:8080
-# DB file: backend/data/signbankdb.mv.db (auto-created)
-```
-
-**2. Frontend** (new terminal):
-```bash
-cd frontend
-npm install
-npm run dev
-# Runs on http://localhost:5173
-```
-
-### Option A2: PostgreSQL (optional)
-
-If you prefer PostgreSQL, ensure it's running and use the `postgres` profile:
+**Prerequisites:** Node.js >= 18, Java 21 JDK.
 
 ```bash
-createdb signbank_db
-cd backend
-./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+# 1. Clone & enter
+git clone <repo-url> && cd Sign-Bank-Enterprise-mphasis-main
+
+# 2. Frontend deps
+cd frontend && npm install && cd ..
+
+# 3. Build & run backend (auto-creates DB + seeds data)
+cd backend && ./mvnw spring-boot:run
+
+# 4. New terminal — start frontend
+cd frontend && npm run dev
 ```
 
-### Option B: Automated Script
+> **Database is fully automatic** — uses H2 file-based DB. Tables and demo data are created on first run. To reset, delete `backend/data/signbankdb.mv.db` and restart.
 
+Open **http://localhost:5173** with a webcam.
+
+### Automated Script
 ```bash
 bash setup.sh
 ```
 
-This checks prerequisites, installs deps, builds the backend, and prints instructions.
+---
+
+## 🧪 Demo Credentials
+
+| User ID | Role | Login Method | Credentials |
+|---------|------|-------------|-------------|
+| `admin` | Admin | Username/password | `admin` / `admin123` |
+| `1111` | Operator | Gesture sequence | G001→G002→G003 (One→Two→Three) |
+| `1212` | Operator | Gesture | G005 (Open Palm) |
+| `2111` | Viewer | Gesture sequence | G001→G002→G001 |
+| `2212` | Viewer | Gesture sequence | G003→G004→G005 |
+
+### Gesture Reference
+| ID | Gesture | ID | Gesture |
+|----|--------|----|--------|
+| G001 | ☝️ One Finger | G006 | 👍 Thumbs Up |
+| G002 | ✌️ Two Fingers | G007 | 👎 Thumbs Down |
+| G003 | 🤟 Three Fingers | G008 | ✊ Fist |
+| G004 | 🖖 Closed Middle Two | G009 | 🤏 Middle Two Closed |
+| G005 | 🖐️ Open Palm | G010 | ✌️ Victory |
 
 ---
 
-## Demo Credentials
+## 🗺️ Routes
 
-| User ID | Role     | Login Method      | Credentials                          |
-|---------|----------|-------------------|--------------------------------------|
-| admin   | Admin    | Username/password | Username: `admin`, Password: `admin123` |
-| 1111    | Operator | Gesture password  | G001-G002-G003 (One → Two → Three Fingers) |
-| 1212    | Operator | Gesture password  | G005 (Open Palm)                          |
-| 2111    | Viewer   | Gesture password  | G001-G002-G001                            |
-| 2212    | Viewer   | Gesture password  | G003-G004-G005                            |
+### Admin
+| Route | Description |
+|-------|------------|
+| `/admin/dashboard` | Navigation hub with platform overview |
+| `/admin/users` | CRUD user management |
+| `/admin/gestures` | View registered gestures |
+| `/admin/pages` | View pages & role assignments |
+| `/admin/commands` | View available commands per page |
+| `/admin/mappings` | Gesture → Command mapping editor |
+| `/admin/analytics` | Platform-wide interaction analytics |
+| `/admin/fraud-dashboard` | Fraud overview & trends |
+| `/admin/fraud-alerts` | Browse & manage fraud alerts |
+| `/admin/fraud-rules` | Configure fraud detection rules |
 
-### Gesture ID Reference
+### Operator
+| Route | Description |
+|-------|------------|
+| `/operator/dashboard` | Available commands with gesture guide |
+| `/operator/balance` | Check account balance |
+| `/operator/set-limit/:type` | Set daily/transaction limits via finger tracking |
+| `/operator/cards` | View managed cards |
+| `/operator/card-actions/:type` | Block / unblock / replace cards |
 
-| ID   | Gesture                  |
-|------|--------------------------|
-| G001 | One Finger               |
-| G002 | Two Fingers              |
-| G003 | Three Fingers            |
-| G004 | Closed Middle Two Fingers|
-| G005 | Open Palm                |
-| G006 | Thumbs Up                |
-| G007 | Thumbs Down              |
-| G008 | Fist                     |
-| G009 | Middle Two Closed        |
-
----
-
-## User Roles & Routes
-
-| Role     | Login Page           | Landing Page          |
-|----------|----------------------|-----------------------|
-| Admin    | `/admin/login`       | `/admin/dashboard`    |
-| Operator | `/login/gesture`     | `/operator/dashboard` |
-| Viewer   | `/login/gesture`     | `/viewer/dashboard`   |
-
-### Admin Pages
-
-| Route                  | Description                          |
-|------------------------|--------------------------------------|
-| `/admin/dashboard`     | Navigation hub                       |
-| `/admin/users`         | CRUD users                           |
-| `/admin/gestures`      | View registered gestures             |
-| `/admin/pages`         | View pages & role assignments        |
-| `/admin/commands`      | View commands per page               |
-| `/admin/mappings`      | Gesture → command mapping editor     |
-| `/admin/analytics`     | Platform interaction statistics      |
-
-### Operator Pages
-
-| Route                        | Description                    |
-|------------------------------|--------------------------------|
-| `/operator/dashboard`        | Available commands + gestures  |
-| `/operator/balance`          | Check balance                  |
-| `/operator/set-limit/:type`  | Set transaction limit via finger tracking |
-| `/operator/cards`            | Card management                |
-| `/operator/card-actions/:type` | Block/unblock/replace cards  |
-
-### Viewer Pages
-
-| Route                   | Description                   |
-|-------------------------|-------------------------------|
-| `/viewer/dashboard`     | Available commands + gestures |
-| `/viewer/logs`          | Personal interaction history  |
-| `/viewer/analytics`     | Personal usage analytics      |
+### Viewer
+| Route | Description |
+|-------|------------|
+| `/viewer/dashboard` | Available commands with gesture guide |
+| `/viewer/logs` | Personal interaction history |
+| `/viewer/analytics` | Personal usage analytics |
 
 ---
 
-## API Overview
+## 🔌 API Endpoints
 
-All endpoints are under `http://localhost:8080/api/`.
+`http://localhost:8080/api/`
 
-| Endpoint                    | Method | Auth     | Description              |
-|-----------------------------|--------|----------|--------------------------|
-| `/api/auth/login`           | POST   | Public   | Login (probe + password) |
-| `/api/auth/set-password`    | POST   | Public   | Set gesture password     |
-| `/api/auth/register`        | POST   | Public   | Register new user        |
-| `/api/auth/verify-credential`| POST  | Public   | Verify gesture password  |
-| `/api/admin/*`              | GET/POST/PUT/DELETE | Public* | Admin CRUD operations |
-| `/api/logs/*`               | GET/POST | Public* | Interaction logs       |
-| `/api/gesture-events`       | POST   | Public   | Submit gesture event     |
-| `/api/operator/cards/*`     | GET/POST | Public* | Card operations        |
-| `/api/operator/analyse-finger` | POST | Public | Finger tracking        |
-| `/api/operator/set-limit`   | GET/POST | Public | Transaction limit       |
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Admin login (username + password) |
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/set-password` | Set/update gesture password |
+| POST | `/api/auth/verify-credential` | Verify gesture sequence login |
+| POST | `/api/auth/probe` | Probe user ID to check role & login type |
 
-> \* Currently set to `permitAll()` in `SecurityConfig` for development. Lock down in production.
+### Fraud Detection
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/fraud/alerts` | List fraud alerts (paginated, filterable) |
+| GET | `/api/fraud/alerts/{id}` | Get alert details |
+| PATCH | `/api/fraud/alerts/{id}/acknowledge` | Acknowledge alert |
+| PATCH | `/api/fraud/alerts/{id}/resolve` | Resolve alert |
+| GET | `/api/fraud/analytics/summary` | Fraud statistics summary |
+| GET | `/api/fraud/analytics/trends` | Alert trend data |
+| GET | `/api/fraud/rules` | List alert rules |
+| POST | `/api/fraud/rules` | Create alert rule |
+| PUT | `/api/fraud/rules/{id}` | Update alert rule |
+| DELETE | `/api/fraud/rules/{id}` | Delete alert rule |
+
+### Card Management
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/operator/cards/{userId}` | List user's cards |
+| GET | `/api/operator/cards/{userId}/{cardNumber}` | Card details |
+| POST | `/api/operator/cards/block` | Block a card |
+| POST | `/api/operator/cards/unblock` | Unblock a card |
+| POST | `/api/operator/cards/replace` | Request card replacement |
+| GET | `/api/operator/cards/replacement/status/{requestId}` | Replacement status |
+
+### Gesture & Interaction
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/gesture-events` | Submit a detected gesture event |
+| GET | `/api/gestures` | List all registered gestures |
+| POST | `/api/operator/set-limit` | Set transaction limit |
+| POST | `/api/operator/analyse-finger` | Finger count analysis (OpenCV) |
+| GET | `/api/logs` | Query interaction logs |
+| GET | `/api/analytics/summary` | Platform analytics summary |
+
+### Admin CRUD
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/admin/users` | List / Create users |
+| GET/PUT/DELETE | `/api/admin/users/{id}` | Read / Update / Delete user |
+| GET/POST | `/api/admin/gestures` | List / Create gestures |
+| GET/PUT/DELETE | `/api/admin/gestures/{id}` | Read / Update / Delete gesture |
+| GET/POST | `/api/admin/pages` | List / Create pages |
+| GET/POST | `/api/admin/commands` | List / Create commands |
+| GET/POST/PUT/DELETE | `/api/admin/mappings` | Gesture→Command mapping CRUD |
 
 ---
 
-## Environment Variables
+## ⚙️ Environment Variables
 
-| Variable       | Default          | Description              |
-|----------------|------------------|--------------------------|
-| `PORT`         | `8080`           | Backend server port      |
-| `VITE_API_URL` | `http://localhost:8080` | Backend URL (frontend) |
-| `SPRING_PROFILES_ACTIVE` | *(unset)* | Set to `postgres` for PostgreSQL mode |
-| `DB_HOST`      | `localhost`      | PostgreSQL host (postgres profile) |
-| `DB_PORT`      | `5432`           | PostgreSQL port (postgres profile) |
-| `DB_NAME`      | `signbank_db`    | Database name (postgres profile) |
-| `DB_USER`      | `postgres`       | Database user (postgres profile) |
-| `DB_PASSWORD`  | `postgres`       | Database password (postgres profile) |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Backend server port |
+| `VITE_API_URL` | `http://localhost:8080` | Backend URL (frontend .env) |
+| `SPRING_PROFILES_ACTIVE` | *(unset)* | Set to `postgres` for PostgreSQL |
+| `DB_HOST` | `localhost` | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_NAME` | `signbank_db` | Database name |
+| `DB_USER` | `postgres` | Database user |
+| `DB_PASSWORD` | `postgres` | Database password |
 
 ---
 
-## Production Build
-
-### Frontend
+## 🏭 Production Build
 
 ```bash
-cd frontend
-npm run build
-# Output: frontend/dist/ — serve with Nginx or any static server
-```
+# Frontend
+cd frontend && npm run build
+# Output: frontend/dist/ — serve via Nginx
 
-### Backend
-
-```bash
-cd backend
-./mvnw clean package -DskipTests
-# Output: backend/target/backend-0.0.1-SNAPSHOT.jar
+# Backend
+cd backend && ./mvnw clean package -DskipTests
 java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
 ```
 
+---
 
+## 🏛️ Architecture Highlights
+
+- **Client-Side Gesture Detection** — MediaPipe Hands runs entirely in the browser via CDN. No video data is sent to the server, preserving privacy. The backend only receives classified gesture IDs.
+- **AI Fraud Detection** — Custom engine evaluates login patterns, transaction amounts, velocity, and device fingerprints in real-time. 11 rules fire on every event.
+- **Dual Database Support** — H2 for zero-setup development, PostgreSQL for production. Flyway manages both schemas.
+- **Gesture Challenge Login** — Users don't set a fixed gesture password. Instead, they register multiple gesture "challenges" and the system presents a random subset each login, preventing shoulder-surfing and recording attacks.
+- **OpenCV Finger Tracking** — For the set-limit slider, the server processes individual finger images to count raised fingers, enabling precise limit adjustment without a mouse.
 
 ---
 
-## Architecture Notes
+## 📄 License
 
-- **Gesture detection** runs entirely in the browser via MediaPipe Hands (CDN-loaded). The backend receives classified gesture events.
-- **Finger tracking** for the set-limit slider uses OpenCV on the server side (no native install needed — uses `openpnp` Java bindings).
-- **Auth** uses JWT tokens. Admin logs in with username/password. Operators and viewers log in with gesture sequences.
-- **Database** defaults to **H2** (file-based, zero setup). A `postgres` Spring profile switches to PostgreSQL 16. Schema and seed data are managed by **Flyway** migrations + a `data.sql` that re-runs on every startup (safe upsert via `MERGE INTO`).
-- **Gesture passwords** are gesture-ID sequences joined with hyphens (e.g. `G001-G002-G003`). When entering via camera, perform the gestures in order and confirm with Thumbs Up.
-- **Reset database**: delete `backend/data/signbankdb.mv.db` (and `.trace.db`) and restart the backend. All tables and demo data will be recreated.
+Enterprise project — developed for Mphasis.
