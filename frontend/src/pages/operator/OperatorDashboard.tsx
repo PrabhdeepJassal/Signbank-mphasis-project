@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import PortalLayout from '../../components/Layout/PortalLayout';
 
 import GestureCamera from '../../components/GestureCamera/GestureCamera';
+import GestureTrainingModal from '../../components/GestureTrainingModal';
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -83,6 +84,7 @@ export default function OperatorDashboard() {
   const [exiting, setExiting] = useState(false);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showTrainingModal, setShowTrainingModal] = useState(false);
 
   
   const userId = currentUser?.username ?? 'User';
@@ -376,6 +378,9 @@ export default function OperatorDashboard() {
 
             Welcome to SignBank, <span>{userId}</span>
 </h1>
+          <button className="train-gestures-btn" onClick={() => setShowTrainingModal(true)}>
+            🎯 Train My Gestures
+          </button>
  
           <div className="command-cards">
 
@@ -460,7 +465,13 @@ export default function OperatorDashboard() {
         )}
   
       </div>
-  
+
+      <GestureTrainingModal
+        userId={userId}
+        visible={showTrainingModal}
+        onClose={() => setShowTrainingModal(false)}
+      />
+
     </PortalLayout>
 
   );
