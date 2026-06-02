@@ -1,8 +1,8 @@
-.gt-modal-backdrop {
+.gt-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(6px);
+  background: rgba(3, 7, 18, 0.82);
+  backdrop-filter: blur(20px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -12,256 +12,229 @@
 
 .gt-modal {
   background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
-  padding: 28px;
-  max-width: 780px;
+  padding: 24px;
+  max-width: 800px;
   width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
   color: #e2e8f0;
+  position: relative;
 }
 
-.gt-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.gt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.gt-modal-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.gt-close-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
   color: #94a3b8;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 }
 
-.gt-close:hover {
-  background: rgba(255, 255, 255, 0.12);
+.gt-close-btn:hover {
+  background: rgba(255,255,255,0.12);
   color: #fff;
 }
 
-.gt-title {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 4px;
-}
-
-.gt-subtitle {
-  color: #64748b;
-  font-size: 13px;
-  margin: 0 0 20px;
-}
-
-.gt-main {
+/* ── Progress ── */
+.gt-progress-row {
   display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.gt-camera-section {
+.gt-progress-track {
   flex: 1;
-  min-width: 280px;
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 99px;
+  overflow: hidden;
 }
 
-.gt-camera-container {
+.gt-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.gt-progress-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* ── Body ── */
+.gt-body {
+  display: flex;
+  gap: 20px;
+}
+
+/* ── Camera box ── */
+.gt-camera-box {
+  flex: 1;
   position: relative;
-  width: 100%;
   aspect-ratio: 4 / 3;
-  background: #020617;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #020617;
+  border: 1px solid rgba(0, 229, 255, 0.12);
 }
 
-.gt-video,
-.gt-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1); /* mirror for natural selfie view */
-}
-
-.gt-canvas {
-  z-index: 2;
-}
-
-.gt-camera-off {
+.gt-camera-feed {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  font-size: 13px;
-  z-index: 3;
+  z-index: 1;
 }
 
-.gt-record-btn {
-  display: block;
+.gt-camera-feed .gesture-camera {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  gap: 0 !important;
+}
+
+.gt-camera-feed .camera-header,
+.gt-camera-feed .camera-prompt,
+.gt-camera-feed .ai-status {
+  display: none !important;
+}
+
+.gt-camera-feed .camera-feed {
+  border-radius: 0 !important;
+  aspect-ratio: unset !important;
+  height: 100% !important;
+  width: 100% !important;
+  flex: 1 !important;
+}
+
+.gt-ghost-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  margin-top: 10px;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 14px;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Steps panel ── */
+.gt-steps-panel {
+  flex: 0 0 180px;
+}
+
+.gt-steps-panel h3 {
+  font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.gt-record-btn:hover:not(:disabled) {
-  background: #dc2626;
-}
-
-.gt-record-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.gt-slots-section {
-  flex: 1;
-  min-width: 240px;
-}
-
-.gt-slots-section h3 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 12px;
-  color: #94a3b8;
+  margin: 0 0 10px;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.gt-slots-grid {
+.gt-steps-list {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.gt-step {
+  display: flex;
+  align-items: center;
   gap: 8px;
-}
-
-.gt-slot {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 10px;
   border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid transparent;
+  transition: all 0.3s;
 }
 
-.gt-slot:hover {
-  background: rgba(255, 255, 255, 0.06);
+.gt-step.active {
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.2);
 }
 
-.gt-slot.active {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.08);
+.gt-step.done {
+  opacity: 0.45;
 }
 
-.gt-slot.trained {
-  border-color: rgba(34, 197, 94, 0.3);
+.gt-step.just-recorded {
+  border-color: rgba(34,197,94,0.3);
+  background: rgba(34,197,94,0.06);
 }
 
-.gt-slot-number {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.gt-step-badge {
+  width: 20px;
+  text-align: center;
   font-size: 12px;
-  font-weight: 700;
   flex-shrink: 0;
 }
 
-.gt-slot.active .gt-slot-number {
-  background: #3b82f6;
-  color: #fff;
+/* ── Done screen ── */
+.gt-done-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  text-align: center;
 }
 
-.gt-slot-name {
-  font-size: 13px;
-  font-weight: 500;
-  flex: 1;
+.gt-done-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
 }
 
-.gt-slot-status {
-  font-size: 11px;
+.gt-done-body h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.gt-done-body p {
   color: #64748b;
-}
-
-.gt-slot-delete {
-  background: none;
-  border: none;
-  cursor: pointer;
   font-size: 14px;
-  padding: 2px;
-  opacity: 0.5;
-  transition: opacity 0.2s;
+  margin: 0 0 24px;
 }
 
-.gt-slot-delete:hover {
-  opacity: 1;
-}
-
-.gt-actions {
-  margin-top: 16px;
-}
-
-.gt-save-btn {
-  width: 100%;
-  padding: 10px;
+.gt-finish-btn {
+  padding: 12px 32px;
   border: none;
-  border-radius: 8px;
-  background: #22c55e;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   color: #fff;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   font-family: inherit;
 }
 
-.gt-save-btn:hover:not(:disabled) {
-  background: #16a34a;
-}
-
-.gt-save-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.gt-feedback {
-  margin-top: 12px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.gt-instructions {
-  margin-top: 20px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.5;
-  border: 1px dashed rgba(255, 255, 255, 0.08);
+.gt-finish-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(34,197,94,0.3);
 }

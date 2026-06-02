@@ -6,6 +6,7 @@ export interface CardData {
   cardStatus: 'ACTIVE' | 'BLOCKED';
   cardNumber: string;
   replaceRequested: boolean;
+  transactionLimit?: number;
   message?: string;
 }
 

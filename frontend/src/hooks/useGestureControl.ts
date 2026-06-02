@@ -35,8 +35,8 @@ const RAW_TO_EMOJI: Record<string, string> = {
   '6': '🖐️☝️', '7': '🖐️✌️', '8': '🖐️🤌', '9': '🖐️🤘', '10': '🖐️🖐️',
 };
 
-const BUFFER_SIZE = 20;
-const CONFIRM_COUNT = 16;
+const BUFFER_SIZE = 12;
+const CONFIRM_COUNT = 7;
 const COOLDOWN_MS = 2200;
 const ROCK_HOLD_MS = 700;
 const PINCH_LOCK_THRESHOLD = 0.065;
@@ -53,7 +53,7 @@ declare const drawLandmarks: any;
 const HAND_COLORS = ['#00e676', '#40c4ff'];
 const HAND_LABELS = ['Right', 'Left'];
 const EYE_CLOSED_EAR_THRESHOLD = 0.19;
-const EYE_CLOSED_LOCK_CONFIRM_MS = 2500;
+const EYE_CLOSED_LOCK_CONFIRM_MS = 1500;
 
 type SecurityState = 'NORMAL' | 'WARNING' | 'LOCKED';
 
@@ -271,8 +271,9 @@ export function useGestureControl(
     let verifierIndex: number | null = null;
     let eyeClosedStart: number | null = null;
     let verificationProgress = 0;
-    // High-refresh-rate smooth scroll rendering thread (RAF)
+    // Smooth scroll RAF — only runs while pinch-locked (performance: avoid perpetual RAF)
     let scrollAnimId = 0;
+    let scrollLoopRunning = false;
     const smoothScrollLoop = () => {
       if (isPinchLocked && cachedScrollContainer) {
         // Direction-aware damping: reverse direction faster, glide same direction smoother
@@ -293,10 +294,14 @@ export function useGestureControl(
         if (cachedScrollContainer === document.documentElement || cachedScrollContainer === document.body) {
           window.scrollTo(0, currentScrollY);
         }
+        scrollAnimId = requestAnimationFrame(smoothScrollLoop);
+      } else {
+        scrollLoopRunning = false;
       }
-      scrollAnimId = requestAnimationFrame(smoothScrollLoop);
     };
-    scrollAnimId = requestAnimationFrame(smoothScrollLoop);
+    function startScrollLoop() {
+      if (!scrollLoopRunning) { scrollLoopRunning = true; scrollAnimId = requestAnimationFrame(smoothScrollLoop); }
+    }
 
     function emitGesture(event: GestureEvent) {
       if (!enabledRef.current || securityState !== 'NORMAL') return;
@@ -552,6 +557,11 @@ export function useGestureControl(
               raw1 = hands.length > 1 ? classifySingleHand(hands[1], handedness[1]?.label ?? 'Left') : 'Unknown';
             }
 
+            // ── DIRECT UNLOCK: if LOCKED and any hand shows THUMB_UP, unlock immediately ──
+            if (securityState === 'LOCKED' && (raw0 === 'THUMB_UP' || raw1 === 'THUMB_UP')) {
+              transitionToNormal();
+            }
+
             // BACK gesture from hand 0 only (OPEN_PALM → FIST held 350ms)
             // Use raw finger count to avoid classification quirks (thumb-up vs fist)
             const f0 = countFingers(hands[0], handedness[0]?.label ?? 'Right');
@@ -644,6 +654,7 @@ export function useGestureControl(
 
                   if (!isPinchLocked) {
                     isPinchLocked = true;
+                    startScrollLoop();
                     pinchFrameCount = 0;
                     cachedScrollContainer =
                       document.getElementById('portal-content') ||
@@ -706,6 +717,35 @@ export function useGestureControl(
               if (bothThumbsDownBuffer.length > BUFFER_SIZE) bothThumbsDownBuffer.shift();
               const bothThumbsConfirmed = bothThumbsDownBuffer.filter(Boolean).length >= CONFIRM_COUNT;
 
+              // Direct landmark check (bypasses classification quirks):
+              // For each hand, check thumb points DOWN (lm[4].y > lm[2].y + 0.04) 
+              // and all other fingers are curled (tip.y > pip.y)
+              if (hands.length > 1) {
+                const hand0 = hands[0], hand1 = hands[1];
+                const thumbsDown0 = hand0[4].y - hand0[2].y > 0.04 &&
+                  hand0[8].y > hand0[6].y && hand0[12].y > hand0[10].y &&
+                  hand0[16].y > hand0[14].y && hand0[20].y > hand0[18].y;
+                const thumbsDown1 = hand1[4].y - hand1[2].y > 0.04 &&
+                  hand1[8].y > hand1[6].y && hand1[12].y > hand1[10].y &&
+                  hand1[16].y > hand1[14].y && hand1[20].y > hand1[18].y;
+                
+                if (thumbsDown0 && thumbsDown1) {
+                  const now = Date.now();
+                  if ('both-direct' !== lastFiredGesture || now - lastFiredTime >= COOLDOWN_MS) {
+                    lastFiredGesture = 'both-direct';
+                    lastFiredTime = now;
+                    emitGesture({ type: 'BOTH_THUMBS_DOWN', confidence: 100 });
+                    gestureBuffer0 = []; gestureBuffer1 = [];
+                    bothThumbsDownBuffer = [];
+                  }
+                  const bothEmoji = RAW_TO_EMOJI['THUMB_DOWN'] ?? '👎';
+                  ctx.font = 'bold 48px serif'; ctx.fillStyle = '#ef4444';
+                  ctx.shadowColor = 'rgba(239,68,68,.6)'; ctx.shadowBlur = 16;
+                  ctx.fillText(bothEmoji + bothEmoji, W / 2 - 30, H / 2);
+                  ctx.restore(); return;
+                }
+              }
+
               if (bothThumbsConfirmed) {
                 const now = Date.now();
                 const btdKey = 'both';
@@ -761,15 +801,20 @@ export function useGestureControl(
           ctx.restore();
         });
 
+        let frameSkip = 0;
         let faceFrameSkip = 0;
         const loop = async () => {
           if (cancelled) return;
           const v = videoRef.current;
           if (v && !v.paused && v.readyState >= 2) {
-            try { await handsInst.send({ image: v }); } catch (_) { }
-            faceFrameSkip++;
-            if (faceFrameSkip % 5 === 0 && faceMeshReady && faceMeshInst) {
-              try { faceMeshInst.send({ image: v }); } catch (_) { }
+            frameSkip++;
+            // Throttle MediaPipe to every 2nd frame (~30fps) — full 60fps ML inference is wasteful
+            if (frameSkip % 2 === 0) {
+              try { await handsInst.send({ image: v }); } catch (_) { }
+              faceFrameSkip++;
+              if (faceFrameSkip % 5 === 0 && faceMeshReady && faceMeshInst) {
+                try { faceMeshInst.send({ image: v }); } catch (_) { }
+              }
             }
           }
           animId = requestAnimationFrame(loop);

@@ -13,6 +13,7 @@ export type ARMode = 'idle' | 'waiting' | 'correct' | 'incorrect' | 'completed';
 
 const FEEDBACK_DISPLAY_MS = 1200;
 
+// ── Hand skeleton connections ──
 const HAND_CONNECTIONS: [number, number][] = [
   [0, 1], [1, 2], [2, 3], [3, 4],
   [0, 5], [5, 6], [6, 7], [7, 8],
@@ -22,6 +23,7 @@ const HAND_CONNECTIONS: [number, number][] = [
   [5, 9], [9, 13], [13, 17],
 ];
 
+// ── Base landmark positions (neutral hand) ──
 const BASE_LM: [number, number][] = [
   [0.50, 0.82], [0.34, 0.72], [0.24, 0.62], [0.19, 0.52], [0.17, 0.42],
   [0.40, 0.54], [0.40, 0.36], [0.40, 0.26], [0.40, 0.16],
@@ -30,6 +32,7 @@ const BASE_LM: [number, number][] = [
   [0.68, 0.64], [0.68, 0.50], [0.68, 0.44], [0.68, 0.38],
 ];
 
+// ── Curled finger positions for each MCP joint ──
 const CURLED_FINGER: Record<number, [[number, number], [number, number], [number, number]]> = {
   5:  [[0.37, 0.44], [0.35, 0.50], [0.41, 0.56]],
   9:  [[0.47, 0.40], [0.45, 0.46], [0.51, 0.52]],
@@ -78,64 +81,95 @@ function applyPose(lm: [number, number][], [thumbExt, ...fingerExt]: Pose) {
   }
 }
 
-// For THUMB_DOWN: extend thumb downward, all other fingers curled
 function applyThumbDown(lm: [number, number][]) {
   applyPose(lm, [false, false, false, false, false] as Pose);
-  // Override thumb to point clearly down
-  lm[1] = [0.30, 0.55];
-  lm[2] = [0.26, 0.62];
-  lm[3] = [0.28, 0.74];
-  lm[4] = [0.30, 0.86];
+  lm[1] = [0.30, 0.55]; lm[2] = [0.26, 0.62];
+  lm[3] = [0.28, 0.74]; lm[4] = [0.30, 0.86];
 }
 
-// For OK: bring thumb tip and index tip together
 function applyOkPose(lm: [number, number][]) {
   applyPose(lm, [false, false, false, false, false] as Pose);
-  // Keep thumb and index curled up naturally toward each other
-  lm[2] = [0.32, 0.52];
-  lm[3] = [0.28, 0.48];
-  lm[4] = [0.25, 0.46];
-  lm[6] = [0.38, 0.52];
-  lm[7] = [0.32, 0.50];
-  lm[8] = [0.25, 0.46];
-  // Middle, ring, pinky stay curled
+  lm[2] = [0.32, 0.52]; lm[3] = [0.28, 0.48]; lm[4] = [0.25, 0.46];
+  lm[6] = [0.38, 0.52]; lm[7] = [0.32, 0.50]; lm[8] = [0.25, 0.46];
 }
 
 function makeLandmarks(gesture: string): [number, number][] {
   const lm = BASE_LM.map(p => [...p] as [number, number]);
-
-  if (gesture === 'THUMB_DOWN') {
-    applyThumbDown(lm);
-    return lm;
-  }
-  if (gesture === 'OK') {
-    applyOkPose(lm);
-    return lm;
-  }
-
+  if (gesture === 'THUMB_DOWN') { applyThumbDown(lm); return lm; }
+  if (gesture === 'OK') { applyOkPose(lm); return lm; }
   const pose = GESTURE_POSE[gesture];
-  if (pose) {
-    applyPose(lm, pose);
-  }
-
+  if (pose) applyPose(lm, pose);
   return lm;
 }
 
-function drawHandSkeleton(
+// ── Particle system for celebration effects ──
+interface Particle {
+  x: number; y: number; vx: number; vy: number;
+  life: number; maxLife: number; size: number; color: string;
+}
+
+function spawnParticles(cx: number, cy: number, count: number): Particle[] {
+  const particles: Particle[] = [];
+  const colors = ['#00e5ff', '#a78bfa', '#34d399', '#fbbf24', '#f472b6'];
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+    const speed = 2 + Math.random() * 4;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      life: 1,
+      maxLife: 30 + Math.random() * 30,
+      size: 2 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+  return particles;
+}
+
+function updateParticles(particles: Particle[]): Particle[] {
+  return particles
+    .map(p => ({
+      ...p,
+      x: p.x + p.vx,
+      y: p.y + p.vy,
+      vy: p.vy + 0.08,
+      life: p.life - 1 / p.maxLife,
+    }))
+    .filter(p => p.life > 0);
+}
+
+function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[]) {
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ── VR-style skeleton drawing with neon hologram effect ──
+function drawHandSkeletonVR(
   ctx: CanvasRenderingContext2D,
   landmarks: [number, number][],
   cx: number, cy: number, scale: number,
-  color: string, alpha: number
+  color: string, alpha: number, neonIntensity = 1
 ) {
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  const proj = (lm: [number, number]) => [
-    cx + (lm[0] - 0.5) * scale,
-    cy + (lm[1] - 0.5) * scale,
-  ] as const;
+  const proj = (lm: [number, number]) =>
+    [cx + (lm[0] - 0.5) * scale, cy + (lm[1] - 0.5) * scale] as const;
 
-  // Draw palm fill for expressiveness
+  const now = Date.now();
+  const pulse = 0.85 + Math.sin(now / 400) * 0.15; // gentle breathing pulse
+
+  // ── Palm glow (radial gradient) ──
   const PALM_INDICES = [0, 5, 9, 13, 17, 0];
   ctx.beginPath();
   const [sx, sy] = proj(landmarks[0]);
@@ -145,97 +179,85 @@ function drawHandSkeleton(
     ctx.lineTo(px, py);
   }
   ctx.closePath();
-  const palmGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale * 0.35);
-  palmGrad.addColorStop(0, color + '33');
-  palmGrad.addColorStop(1, color + '11');
+  const palmGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale * 0.4);
+  palmGrad.addColorStop(0, color + '44');
+  palmGrad.addColorStop(0.5, color + '22');
+  palmGrad.addColorStop(1, color + '00');
   ctx.fillStyle = palmGrad;
   ctx.fill();
 
-  // Draw finger bones with gradient thickness
+  // ── Outer glow ring around the hand ──
+  ctx.beginPath();
+  ctx.arc(cx, cy, scale * 0.35, 0, Math.PI * 2);
+  ctx.strokeStyle = color + '22';
+  ctx.lineWidth = 1;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 30 * neonIntensity;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // ── Finger bones with neon glow ──
   for (const [i, j] of HAND_CONNECTIONS) {
     const [x1, y1] = proj(landmarks[i]);
     const [x2, y2] = proj(landmarks[j]);
     const isTipConn = [4, 8, 12, 16, 20].includes(j);
     ctx.strokeStyle = color;
-    ctx.lineWidth = isTipConn ? 3 : 2.5;
+    ctx.lineWidth = isTipConn ? 3.5 : 2.5;
     ctx.lineCap = 'round';
     ctx.shadowColor = color;
-    ctx.shadowBlur = isTipConn ? 14 : 8;
+    ctx.shadowBlur = (isTipConn ? 20 : 12) * neonIntensity * pulse;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
   }
+  ctx.shadowBlur = 0;
 
-  ctx.shadowBlur = 6;
+  // ── Joint dots ──
   for (const [i, lm] of landmarks.entries()) {
     const [x, y] = proj(lm);
     const isPalmJoint = [0, 5, 9, 13, 17].includes(i);
     const isWrist = i === 0;
-    const radius = isWrist ? 4 : isPalmJoint ? 3.5 : FINGER_TIP_INDICES.includes(i) ? 2.5 : 2;
+    const radius = isWrist ? 4 : isPalmJoint ? 3.5 : FINGER_TIP_INDICES.includes(i) ? 3 : 2;
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fillStyle = isPalmJoint ? color : '#ffffff';
-    ctx.shadowColor = isPalmJoint ? color : 'rgba(255,255,255,0.5)';
-    ctx.shadowBlur = isPalmJoint ? 10 : 4;
+    ctx.shadowColor = isPalmJoint ? color : 'rgba(255,255,255,0.6)';
+    ctx.shadowBlur = isPalmJoint ? 12 * neonIntensity * pulse : 6;
     ctx.fill();
   }
+  ctx.shadowBlur = 0;
 
-  // Draw finger tips with extra glow
-  ctx.shadowBlur = 18;
+  // ── Finger tip glow rings ──
   for (const idx of FINGER_TIP_INDICES) {
     const [x, y] = proj(landmarks[idx]);
-    const tipGrad = ctx.createRadialGradient(x, y, 0, x, y, 8);
+    const tipGrad = ctx.createRadialGradient(x, y, 0, x, y, 10);
     tipGrad.addColorStop(0, '#ffffff');
-    tipGrad.addColorStop(0.4, color);
+    tipGrad.addColorStop(0.3, color);
     tipGrad.addColorStop(1, color + '00');
     ctx.beginPath();
-    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.arc(x, y, 10 * neonIntensity * pulse, 0, Math.PI * 2);
     ctx.fillStyle = tipGrad;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 24 * neonIntensity * pulse;
     ctx.fill();
   }
 
   ctx.restore();
 }
 
-function drawMiniHand(
+function drawMiniHandVR(
   ctx: CanvasRenderingContext2D,
   gesture: string,
   cx: number, cy: number, scale: number,
-  color: string, alpha: number
+  color: string, alpha: number, neonIntensity = 1
 ) {
   const lm = makeLandmarks(gesture);
-  drawHandSkeleton(ctx, lm, cx, cy, scale, color, alpha);
+  drawHandSkeletonVR(ctx, lm, cx, cy, scale, color, alpha, neonIntensity);
 }
 
-function drawDirectionArrow(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number,
-  color: string
-) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 250) * 0.4;
-  ctx.fillStyle = color;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 16;
-
-  ctx.beginPath();
-  ctx.moveTo(0, -16);
-  ctx.lineTo(-10, -2);
-  ctx.lineTo(-4, -2);
-  ctx.lineTo(-4, 10);
-  ctx.lineTo(4, 10);
-  ctx.lineTo(4, -2);
-  ctx.lineTo(10, -2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
-}
-
-// Two-hand gesture: draw two hands side by side
-function drawTwoHands(
+// ── Two-hand gesture drawing ──
+function drawTwoHandsVR(
   ctx: CanvasRenderingContext2D,
   gesture: string,
   cx: number, cy: number, scale: number,
@@ -243,19 +265,114 @@ function drawTwoHands(
 ) {
   const val = parseInt(gesture, 10);
   if (isNaN(val) || val < 6 || val > 10) return;
-
   const leftCount = val - 5;
-  const leftGesture = String(leftCount);
-  const rightGesture = '5';
-
   const hScale = scale * 0.75;
   const gap = hScale * 0.95;
   const yOff = 6;
-
-  drawMiniHand(ctx, leftGesture, cx - gap, cy + yOff, hScale, color, alpha);
-  drawMiniHand(ctx, rightGesture, cx + gap, cy - yOff, hScale, color, alpha);
+  drawMiniHandVR(ctx, String(leftCount), cx - gap, cy + yOff, hScale, color, alpha);
+  drawMiniHandVR(ctx, '5', cx + gap, cy - yOff, hScale, color, alpha);
 }
 
+// ── Guided hand positioning reticle ──
+function drawGuidedReticle(
+  ctx: CanvasRenderingContext2D,
+  cx: number, cy: number, radius: number,
+  detected: boolean
+) {
+  const now = Date.now();
+  const pulse = 0.6 + Math.sin(now / 300) * 0.4;
+  const color = detected ? '#22c55e' : 'rgba(148, 163, 184, 0.4)';
+
+  // Outer dashed ring
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 8]);
+  ctx.shadowColor = detected ? '#22c55e' : 'transparent';
+  ctx.shadowBlur = detected ? 20 : 0;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Corner brackets
+  const bracketSize = 18;
+  const bracketGap = 8;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = color;
+  const corners = [
+    [-1, -1], [1, -1], [-1, 1], [1, 1],
+  ];
+  for (const [dx, dy] of corners) {
+    const bx = cx + dx * (radius + bracketGap);
+    const by = cy + dy * (radius + bracketGap);
+    ctx.beginPath();
+    ctx.moveTo(bx - dx * bracketSize, by);
+    ctx.lineTo(bx, by);
+    ctx.lineTo(bx, by - dy * bracketSize);
+    ctx.stroke();
+  }
+
+  // Center crosshair dot
+  ctx.fillStyle = color;
+  ctx.shadowColor = detected ? '#22c55e' : 'transparent';
+  ctx.shadowBlur = detected ? 12 * pulse : 0;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── HUD overlay ──
+function drawHUD(
+  ctx: CanvasRenderingContext2D,
+  W: number, H: number,
+  stepLabel: string,
+  stepEmoji: string,
+  instruction: string,
+  detectedFingers: number | null,
+  targetFingers: number | null,
+  mode: ARMode
+) {
+  ctx.save();
+
+  // Top HUD bar
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+  ctx.beginPath();
+  ctx.roundRect(8, 8, W - 16, 44, 10);
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px system-ui';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${stepEmoji} ${stepLabel}`, 20, 30);
+
+  ctx.textAlign = 'right';
+  ctx.font = '12px system-ui';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText(instruction, W - 16, 30);
+
+  // Bottom HUD — finger count
+  if (detectedFingers !== null && targetFingers !== null && mode === 'waiting') {
+    const isMatch = detectedFingers === targetFingers;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.beginPath();
+    ctx.roundRect(8, H - 38, 180, 30, 8);
+    ctx.fill();
+
+    ctx.font = 'bold 13px system-ui';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isMatch ? '#22c55e' : '#f87171';
+    ctx.fillText(`Fingers: ${detectedFingers} / ${targetFingers}`, 16, H - 23);
+  }
+
+  ctx.restore();
+}
+
+// ── Animation timing ──
 const ANIM_FADE_IN = 0.6;
 const ANIM_HOLD = 2.8;
 const ANIM_FADE_OUT = 0.6;
@@ -281,6 +398,17 @@ function isTwoHandGesture(gesture: string): boolean {
   return ['6', '7', '8', '9', '10'].includes(gesture);
 }
 
+// ── Parse finger count from a gesture string ──
+function gestureToFingerCount(gesture: string): number | null {
+  if (/^[0-9]$|^10$/.test(gesture)) return parseInt(gesture, 10);
+  if (gesture === 'OPEN_PALM' || gesture === '5') return 5;
+  if (gesture === 'FIST' || gesture === '0') return 0;
+  if (gesture === 'THUMB_UP' || gesture === 'THUMB_DOWN') return 1;
+  if (gesture === 'ROCK') return 2;
+  if (gesture === 'OK') return 1;
+  return null;
+}
+
 export function useARGuide(steps: ARStep[], onComplete: () => void) {
   const [stepIndex, setStepIndex] = useState(0);
   const [mode, setMode] = useState<ARMode>('idle');
@@ -290,6 +418,10 @@ export function useARGuide(steps: ARStep[], onComplete: () => void) {
   const modeRef = useRef(mode);
   const stepIndexRef = useRef(stepIndex);
   const stepStartTime = useRef(Date.now());
+
+  // Particle system state
+  const particlesRef = useRef<Particle[]>([]);
+  const particleSpawnedRef = useRef(false);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { stepIndexRef.current = stepIndex; }, [stepIndex]);
@@ -302,6 +434,8 @@ export function useARGuide(steps: ARStep[], onComplete: () => void) {
     setLastGesture(null);
     setConfidence(0);
     stepStartTime.current = Date.now();
+    particlesRef.current = [];
+    particleSpawnedRef.current = false;
   }, []);
 
   const reset = useCallback(() => {
@@ -310,6 +444,7 @@ export function useARGuide(steps: ARStep[], onComplete: () => void) {
     setStepIndex(0);
     setLastGesture(null);
     setConfidence(0);
+    particlesRef.current = [];
   }, []);
 
   const skip = useCallback(() => {
@@ -327,6 +462,8 @@ export function useARGuide(steps: ARStep[], onComplete: () => void) {
 
     if (gesture === currentStep.gesture && conf >= 70) {
       setMode('correct');
+      // Spawn celebration particles
+      particleSpawnedRef.current = true;
       playCorrectSound();
       if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
       feedbackTimer.current = setTimeout(() => {
@@ -340,6 +477,8 @@ export function useARGuide(steps: ARStep[], onComplete: () => void) {
           setLastGesture(null);
           setConfidence(0);
           stepStartTime.current = Date.now();
+          particlesRef.current = [];
+          particleSpawnedRef.current = false;
         }
       }, FEEDBACK_DISPLAY_MS);
     } else if (gesture !== 'Unknown' && conf >= 60) {
@@ -355,53 +494,82 @@ export function useARGuide(steps: ARStep[], onComplete: () => void) {
     }
   }, [currentStep, steps.length, onComplete]);
 
+  // ── Main draw function called every RAF by OnboardingTutorial ──
   const drawFeedback = useCallback((
     ctx: CanvasRenderingContext2D,
-    W: number, H: number
+    W: number, H: number,
+    detectedLandmarks?: { x: number; y: number }[] | null // optional real hand landmarks
   ) => {
     if (!currentStep) return;
 
     const centerX = W / 2;
-    const centerY = H / 2;
-    const baseScale = Math.min(W, H) * 0.6;
+    const centerY = H / 2 + 30; // slightly below center to match natural hand position
+    const baseScale = Math.min(W, H) * 0.55;
     const elapsed = (Date.now() - stepStartTime.current) / 1000;
     const anim = calcAnim(elapsed);
     const twoHand = isTwoHandGesture(currentStep.gesture);
+    const now = Date.now();
 
+    // ── WAITING mode: show ghost hand with VR glow ──
     if (mode === 'waiting') {
-      ctx.save();
+      // Draw guided reticle
+      const handDetected = detectedLandmarks && detectedLandmarks.length > 0;
+      drawGuidedReticle(ctx, centerX, centerY, baseScale * 0.4, !!handDetected);
 
+      // Draw ghost hand
       if (twoHand) {
-        drawTwoHands(ctx, currentStep.gesture, centerX, centerY,
-          baseScale * anim.scaleMul, '#a78bfa', 0.3 + 0.5 * anim.alpha);
+        drawTwoHandsVR(ctx, currentStep.gesture, centerX, centerY,
+          baseScale * anim.scaleMul, '#00e5ff', 0.3 + 0.5 * anim.alpha);
       } else {
-        const alpha = 0.3 + 0.5 * anim.alpha;
-        drawHandSkeleton(ctx, makeLandmarks(currentStep.gesture),
-          centerX, centerY, baseScale * anim.scaleMul, '#a78bfa', alpha);
+        drawHandSkeletonVR(ctx, makeLandmarks(currentStep.gesture),
+          centerX, centerY, baseScale * anim.scaleMul, '#00e5ff',
+          0.3 + 0.5 * anim.alpha, 1.2);
       }
 
+      // If user's hand is detected, draw a comparison indicator
+      if (handDetected) {
+        // Draw a subtle "your hand" label
+        ctx.save();
+        ctx.font = '10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+        ctx.fillText('YOUR HAND →', centerX + baseScale * 0.55, centerY - 10);
+        ctx.restore();
+      }
+
+      // Ghost hand label
+      ctx.save();
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(0, 229, 255, 0.6)';
+      ctx.fillText('← TARGET POSE', centerX - baseScale * 0.55, centerY - 10);
       ctx.restore();
     }
 
+    // ── INCORRECT mode: show ghost hand + error indication ──
     if (mode === 'incorrect') {
       ctx.save();
-      ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
+      // Red tint overlay
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.06)';
       ctx.fillRect(0, 0, W, H);
 
-      const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
-      ctx.strokeStyle = `rgba(244, 63, 94, ${0.35 * pulse})`;
+      // Pulsing red border
+      const pulse = Math.sin(now / 200) * 0.3 + 0.7;
+      ctx.strokeStyle = `rgba(244, 63, 94, ${0.3 * pulse})`;
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 6]);
       ctx.strokeRect(10, 10, W - 20, H - 20);
       ctx.setLineDash([]);
 
+      // Show ghost hand with guidance (blue color - indicating correction)
       if (twoHand) {
-        drawTwoHands(ctx, currentStep.gesture, centerX, centerY + 10,
+        drawTwoHandsVR(ctx, currentStep.gesture, centerX, centerY + 10,
           baseScale, '#60a5fa', 0.75);
       } else {
-        drawHandSkeleton(ctx, makeLandmarks(currentStep.gesture),
-          centerX, centerY, baseScale, '#60a5fa', 0.75);
+        drawHandSkeletonVR(ctx, makeLandmarks(currentStep.gesture),
+          centerX, centerY, baseScale, '#60a5fa', 0.7, 0.8);
 
+        // Direction arrows for fingers that should be extended
         const pose = GESTURE_POSE[currentStep.gesture];
         const [_, ...fingerExts] = pose ?? [true, true, true, true, true];
         for (let i = 0; i < 4; i++) {
@@ -410,31 +578,104 @@ export function useARGuide(steps: ARStep[], onComplete: () => void) {
             const [lx, ly] = makeLandmarks(currentStep.gesture)[tipIdx];
             const ax = centerX + (lx - 0.5) * baseScale;
             const ay = centerY + (ly - 0.5) * baseScale;
-            drawDirectionArrow(ctx, ax, ay - 20, '#60a5fa');
+            // Small arrow indicator
+            ctx.save();
+            ctx.translate(ax, ay - 20);
+            ctx.globalAlpha = 0.6 + Math.sin(now / 250) * 0.4;
+            ctx.fillStyle = '#60a5fa';
+            ctx.shadowColor = '#60a5fa';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.lineTo(-6, 0);
+            ctx.lineTo(-3, 0);
+            ctx.lineTo(-3, 8);
+            ctx.lineTo(3, 8);
+            ctx.lineTo(3, 0);
+            ctx.lineTo(6, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
           }
         }
       }
+
       ctx.restore();
     }
 
+    // ── CORRECT mode: celebration effects ──
     if (mode === 'correct') {
       ctx.save();
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+
+      // Green tint
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.06)';
       ctx.fillRect(0, 0, W, H);
 
-      const p = Math.sin(Date.now() / 200) * 0.15 + 0.85;
-      ctx.strokeStyle = `rgba(16, 185, 129, ${0.35 * p})`;
+      // Pulsing green border
+      const p = Math.sin(now / 200) * 0.15 + 0.85;
+      ctx.strokeStyle = `rgba(16, 185, 129, ${0.3 * p})`;
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 6]);
       ctx.strokeRect(10, 10, W - 20, H - 20);
       ctx.setLineDash([]);
 
-      const ghostLm = makeLandmarks(currentStep.gesture);
-      drawHandSkeleton(ctx, ghostLm, W / 2, H / 2, baseScale * 0.7,
-        '#34d399', 0.25);
+      // Ghost hand fade-out
+      if (twoHand) {
+        drawTwoHandsVR(ctx, currentStep.gesture, W / 2, H / 2,
+          baseScale * 0.7, '#34d399', 0.2);
+      } else {
+        drawHandSkeletonVR(ctx, makeLandmarks(currentStep.gesture),
+          W / 2, H / 2, baseScale * 0.7, '#34d399', 0.2, 0.5);
+      }
+
+      // Spawn particles on first correct frame
+      if (particleSpawnedRef.current && particlesRef.current.length === 0) {
+        particlesRef.current = spawnParticles(W / 2, H / 2, 36);
+        particleSpawnedRef.current = false;
+      }
+
+      // Update and draw particles
+      particlesRef.current = updateParticles(particlesRef.current);
+      drawParticles(ctx, particlesRef.current);
+
       ctx.restore();
     }
-  }, [mode, currentStep]);
+
+    // ── Always draw HUD (except in idle/completed) ──
+    if (mode !== 'idle' && mode !== 'completed') {
+      // Show detected finger info based on last gesture
+      const detectedCount = lastGesture ? gestureToFingerCount(lastGesture) : null;
+      const targetCount = gestureToFingerCount(currentStep.gesture);
+      drawHUD(ctx, W, H, currentStep.label, currentStep.ghostEmoji,
+        currentStep.instruction, detectedCount, targetCount, mode);
+    }
+
+    // ── Big status text overlay ──
+    if (mode === 'correct') {
+      ctx.save();
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+      ctx.font = 'bold 28px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#34d399';
+      ctx.shadowBlur = 30;
+      ctx.fillText('✅ GOT IT!', W / 2, H / 2 - baseScale * 0.6);
+      ctx.restore();
+    }
+
+    if (mode === 'incorrect') {
+      ctx.save();
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.9)';
+      ctx.font = 'bold 22px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 20;
+      ctx.fillText('✕ NOT QUITE — TRY AGAIN', W / 2, H / 2 - baseScale * 0.6);
+      ctx.restore();
+    }
+
+  }, [mode, currentStep, lastGesture]);
 
   const progress = steps.length > 0 ? stepIndex / steps.length : 0;
 

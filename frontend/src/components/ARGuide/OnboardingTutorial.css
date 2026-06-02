@@ -6,10 +6,26 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(3, 7, 18, 0.85);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  background: rgba(3, 7, 18, 0.88);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
   animation: onbFadeIn 0.4s ease forwards;
+}
+
+/* VR scan-line overlay effect */
+.onboarding-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 229, 255, 0.015) 2px,
+    rgba(0, 229, 255, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 @keyframes onbFadeIn {
@@ -103,10 +119,17 @@
   flex: 0 0 420px;
   height: 360px;
   border-radius: var(--r-md);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(0, 229, 255, 0.15);
   position: relative;
   overflow: hidden;
   background: transparent;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.06), inset 0 0 30px rgba(0, 229, 255, 0.03);
+  animation: framePulse 3s ease-in-out infinite;
+}
+
+@keyframes framePulse {
+  0%, 100% { border-color: rgba(0, 229, 255, 0.15); box-shadow: 0 0 30px rgba(0, 229, 255, 0.06); }
+  50% { border-color: rgba(0, 229, 255, 0.25); box-shadow: 0 0 40px rgba(0, 229, 255, 0.10); }
 }
 
 .onboarding-live-feed {
@@ -153,6 +176,23 @@
   object-fit: cover;
   pointer-events: none;
   z-index: 2;
+  mix-blend-mode: normal;
+}
+
+/* VR corner brackets on camera frame */
+.onboarding-camera-frame::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.08);
+  border-radius: calc(var(--r-md) - 2px);
+  pointer-events: none;
+  z-index: 3;
+  mask-image: 
+    linear-gradient(to right, black 16px, transparent 16px, transparent calc(100% - 16px), black calc(100% - 16px)),
+    linear-gradient(to bottom, black 16px, transparent 16px, transparent calc(100% - 16px), black calc(100% - 16px));
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
 }
 
 /* Feedback overlays */
