@@ -40,26 +40,39 @@ export default function GestureTrainingModal({ userId, visible, onClose }: Gestu
   const handsRef = useRef<any>(null);
   const animRef = useRef(0);
 
-  // Load existing gestures on open
+  // Load existing gestures on open + pre-fill slots with system gestures
   useEffect(() => {
     if (!visible || !userId) return;
-    apiClient.get(`/api/gestures/load/${userId}`)
-      .then(r => r.data)
-      .then((data: any[]) => {
-        if (data.length > 0) {
-          setSlots(prev => prev.map(s => {
-            const existing = data.find((g: any) => g.slotNumber === s.slotNumber);
-            return existing
-              ? { ...s, trained: true, gestureName: existing.gestureName, gestureVector: existing.gestureVector }
-              : s;
-          }));
-        }
-      })
-      .catch(() => {});
     setModalState('idle');
     setLastVector(null);
     setFeedback(null);
     setSelectedSlot(1);
+
+    // Fetch system gestures (G001-G005) to name slots, then overlay user's saved gestures
+    Promise.all([
+      apiClient.get('/api/admin/gestures').then(r => r.data).catch(() => []),
+      apiClient.get(`/api/gestures/load/${userId}`).then(r => r.data).catch(() => [])
+    ]).then(([systemGestures, userGestures]) => {
+      const namedSlots = systemGestures.slice(0, 5).map((g: any, i: number) => ({
+        slotNumber: i + 1,
+        gestureName: g.gestureName,
+        trained: false,
+        gestureVector: undefined as string | undefined
+      }));
+      while (namedSlots.length < 5) {
+        namedSlots.push({ slotNumber: namedSlots.length + 1, gestureName: `Gesture ${namedSlots.length + 1}`, trained: false });
+      }
+      // Overlay user's saved gestures
+      if (userGestures.length > 0) {
+        userGestures.forEach((ug: any) => {
+          const idx = namedSlots.findIndex(s => s.slotNumber === ug.slotNumber);
+          if (idx >= 0) {
+            namedSlots[idx] = { ...namedSlots[idx], trained: true, gestureVector: ug.gestureVector };
+          }
+        });
+      }
+      setSlots(namedSlots);
+    });
   }, [visible, userId]);
 
   // Start/stop camera
