@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -232,6 +232,13 @@ export default function OperatorDashboard() {
 
     if (evt.type !== 'GESTURE_ID') return;
 
+    // Pass gesture events to training modal if open
+    if (showTrainingModal) {
+      // Dispatch a custom event that the TrainingModal listens to
+      window.dispatchEvent(new CustomEvent('training-gesture', { detail: evt }));
+      return;
+    }
+
     switch (evt.id) {
 
       case 'G002':
@@ -241,14 +248,17 @@ export default function OperatorDashboard() {
         break;
  
       case 'G003':
+        // Three fingers → open training modal
+        setShowTrainingModal(true);
+        break;
 
+      case 'G004':
         navigate('/operator/cards');
-
         break;
 
     }
 
-  }, [showLogoutConfirm, doLogout, navigate]);
+  }, [showLogoutConfirm, doLogout, navigate, showTrainingModal]);
  
   const cardAccents = ['#059669', '#7c3aed', '#2563eb', '#d97706'];
 
@@ -378,9 +388,6 @@ export default function OperatorDashboard() {
 
             Welcome to SignBank, <span>{userId}</span>
 </h1>
-          <button className="train-gestures-btn" onClick={() => setShowTrainingModal(true)}>
-            🎯 Train My Gestures
-          </button>
  
           <div className="command-cards">
 

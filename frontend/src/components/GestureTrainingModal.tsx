@@ -1,11 +1,13 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import apiClient from '../api/client';
 import './GestureTrainingModal.css';
+import type { GestureEvent } from '../hooks/useGestureControl';
 
 interface GestureTrainingModalProps {
   userId: string;
   visible: boolean;
   onClose: () => void;
+  onGestureEvent?: (evt: GestureEvent) => void;
 }
 
 interface GestureSlot {
@@ -18,22 +20,25 @@ interface GestureSlot {
 const VIDEO_W = 320;
 const VIDEO_H = 240;
 
+type ModalState = 'idle' | 'countdown' | 'captured' | 'saving' | 'saved';
+
 export default function GestureTrainingModal({ userId, visible, onClose }: GestureTrainingModalProps) {
   const [slots, setSlots] = useState<GestureSlot[]>(
     Array.from({ length: 5 }, (_, i) => ({ slotNumber: i + 1, gestureName: `Gesture ${i + 1}`, trained: false }))
   );
   const [selectedSlot, setSelectedSlot] = useState<number>(1);
-  const [recording, setRecording] = useState(false);
+  const [modalState, setModalState] = useState<ModalState>('idle');
   const [countdown, setCountdown] = useState(0);
   const [cameraActive, setCameraActive] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [lastVector, setLastVector] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [gestureHint, setGestureHint] = useState<string>('Show 3 fingers to open training');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const handsRef = useRef<any>(null);
+  const animRef = useRef(0);
 
   // Load existing gestures on open
   useEffect(() => {
@@ -42,28 +47,126 @@ export default function GestureTrainingModal({ userId, visible, onClose }: Gestu
       .then(r => r.data)
       .then((data: any[]) => {
         if (data.length > 0) {
-          const newSlots = slots.map(s => {
+          setSlots(prev => prev.map(s => {
             const existing = data.find((g: any) => g.slotNumber === s.slotNumber);
             return existing
               ? { ...s, trained: true, gestureName: existing.gestureName, gestureVector: existing.gestureVector }
               : s;
-          });
-          setSlots(newSlots);
+          }));
         }
       })
       .catch(() => {});
+    setModalState('idle');
+    setLastVector(null);
+    setFeedback(null);
+    setSelectedSlot(1);
   }, [visible, userId]);
 
   // Start/stop camera
   useEffect(() => {
-    if (!visible) {
-      stopCamera();
-      return;
-    }
+    if (!visible) { stopCamera(); return; }
     startCamera();
     return () => stopCamera();
   }, [visible]);
 
+  // Listen for gesture events from parent dashboard via custom event
+  useEffect(() => {
+    if (!visible) return;
+    const handler = (e: Event) => {
+      const evt = (e as CustomEvent).detail as GestureEvent;
+      handleGesture(evt);
+    };
+    // Also add keyboard shortcuts for dev/testing
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key >= '1' && e.key <= '5') handleGesture({ type: 'DIGIT', value: e.key });
+      else if (e.key === 'r') handleGesture({ type: 'THUMB_UP', confidence: 100 });
+      else if (e.key === 'd') handleGesture({ type: 'THUMB_DOWN', confidence: 100 });
+      else if (e.key === 's') handleGesture({ type: 'OPEN_PALM', confidence: 100 });
+      else if (e.key === 'Escape') handleGesture({ type: 'FIST', confidence: 100 });
+    };
+    window.addEventListener('training-gesture', handler);
+    window.addEventListener('keydown', keyHandler);
+    return () => {
+      window.removeEventListener('training-gesture', handler);
+      window.removeEventListener('keydown', keyHandler);
+    };
+  }, [visible, selectedSlot, lastVector, modalState, slots]);
+
+  // ── Gesture handler — the core of click-free interaction ──
+  function handleGesture(evt: GestureEvent) {
+    if (!visible) return;
+
+    // DIGIT events: select slot (1-5)
+    if (evt.type === 'DIGIT') {
+      const slot = parseInt(evt.value);
+      if (slot >= 1 && slot <= 5) {
+        setSelectedSlot(slot);
+        setFeedback(`🎯 Slot ${slot} selected`);
+        setModalState('idle');
+        setLastVector(null);
+        setTimeout(() => setFeedback(null), 1500);
+      }
+      return;
+    }
+
+    // GESTURE_ID events from the camera system
+    if (evt.type === 'GESTURE_ID') {
+      const gid = evt.id;
+      const digitMatch = gid?.match(/G00(\d)/);
+      if (digitMatch) {
+        const num = parseInt(digitMatch[1]);
+        if (num >= 1 && num <= 5) {
+          setSelectedSlot(num);
+          setFeedback(`🎯 Slot ${num} selected`);
+          setModalState('idle');
+          setLastVector(null);
+          setTimeout(() => setFeedback(null), 1500);
+          return;
+        }
+      }
+      // G006 = Thumbs Up → record
+      if (gid === 'G006') {
+        startRecording();
+        return;
+      }
+      // G007 = Thumbs Down → delete
+      if (gid === 'G007') {
+        deleteGesture(selectedSlot);
+        return;
+      }
+      // G005 = Open Palm → save
+      if (gid === 'G005' && lastVector) {
+        saveGesture();
+        return;
+      }
+      // G008 = Fist → close
+      if (gid === 'G008') {
+        onClose();
+        return;
+      }
+      return;
+    }
+
+    // Named gesture types
+    if (evt.type === 'THUMB_UP') {
+      startRecording();
+      return;
+    }
+    if (evt.type === 'THUMB_DOWN') {
+      deleteGesture(selectedSlot);
+      return;
+    }
+    if (evt.type === 'OPEN_PALM' && lastVector) {
+      saveGesture();
+      return;
+    }
+    if (evt.type === 'FIST') {
+      onClose();
+      return;
+    }
+  }
+
+  // ── Camera ──
   function startCamera() {
     navigator.mediaDevices.getUserMedia({ video: { width: VIDEO_W, height: VIDEO_H } })
       .then(stream => {
@@ -79,25 +182,17 @@ export default function GestureTrainingModal({ userId, visible, onClose }: Gestu
   }
 
   function stopCamera() {
+    cancelAnimationFrame(animRef.current);
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
     setCameraActive(false);
-    if (handsRef.current) {
-      try { handsRef.current.close(); } catch (e) {}
-      handsRef.current = null;
-    }
+    if (handsRef.current) { try { handsRef.current.close(); } catch (e) {} handsRef.current = null; }
   }
 
   function loadMediaPipe() {
-    if (typeof Hands !== 'undefined') {
-      initHands();
-      return;
-    }
+    if (typeof Hands !== 'undefined') { initHands(); return; }
     const check = setInterval(() => {
-      if (typeof Hands !== 'undefined') {
-        clearInterval(check);
-        initHands();
-      }
+      if (typeof Hands !== 'undefined') { clearInterval(check); initHands(); }
     }, 200);
     setTimeout(() => clearInterval(check), 10000);
   }
@@ -114,12 +209,10 @@ export default function GestureTrainingModal({ userId, visible, onClose }: Gestu
   }
 
   function processFrame() {
-    const video = videoRef.current;
-    const hands = handsRef.current;
-    if (video && hands && !video.paused && video.readyState >= 2) {
-      try { hands.send({ image: video }); } catch (e) {}
-    }
-    requestAnimationFrame(processFrame);
+    const v = videoRef.current;
+    const h = handsRef.current;
+    if (v && h && !v.paused && v.readyState >= 2) { try { h.send({ image: v }); } catch (e) {} }
+    animRef.current = requestAnimationFrame(processFrame);
   }
 
   function onHandResults(results: any) {
@@ -134,103 +227,109 @@ export default function GestureTrainingModal({ userId, visible, onClose }: Gestu
 
     const landmarks = results.multiHandLandmarks?.[0];
     if (landmarks) {
-      // Draw landmarks
-      ctx.fillStyle = '#00e676';
-      ctx.strokeStyle = '#00e676';
-      ctx.lineWidth = 2;
       const connections = (window as any).HAND_CONNECTIONS;
-      if (connections) {
-        connections.forEach(([i, j]: [number, number]) => {
-          ctx.beginPath();
-          ctx.moveTo(landmarks[i].x * VIDEO_W, landmarks[i].y * VIDEO_H);
-          ctx.lineTo(landmarks[j].x * VIDEO_W, landmarks[j].y * VIDEO_H);
-          ctx.stroke();
-        });
-      }
-      landmarks.forEach((p: any) => {
+      ctx.strokeStyle = '#00e676'; ctx.lineWidth = 2;
+      if (connections) connections.forEach(([i, j]: [number, number]) => {
         ctx.beginPath();
-        ctx.arc(p.x * VIDEO_W, p.y * VIDEO_H, 4, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(landmarks[i].x * VIDEO_W, landmarks[i].y * VIDEO_H);
+        ctx.lineTo(landmarks[j].x * VIDEO_W, landmarks[j].y * VIDEO_H);
+        ctx.stroke();
       });
-    }
+      ctx.fillStyle = '#00e676';
+      landmarks.forEach((p: any) => { ctx.beginPath(); ctx.arc(p.x * VIDEO_W, p.y * VIDEO_H, 4, 0, Math.PI * 2); ctx.fill(); });
 
-    // Draw countdown overlay
-    if (countdown > 0) {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(0, 0, VIDEO_W, VIDEO_H);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 72px system-ui';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(countdown), VIDEO_W / 2, VIDEO_H / 2);
-    }
+      // Countdown overlay
+      if (modalState === 'countdown' && countdown > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, 0, VIDEO_W, VIDEO_H);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 72px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(countdown), VIDEO_W / 2, VIDEO_H / 2);
+      }
 
-    // Capture vector if recording and countdown finished
-    if (recording && countdown === 0 && landmarks) {
-      const vector = landmarks.map((p: any) => `${p.x},${p.y},${p.z || 0}`).join(',');
-      setLastVector(vector);
+      // Capture when countdown reaches 0
+      if (modalState === 'countdown' && countdown === 0) {
+        const vector = landmarks.map((p: any) => `${p.x},${p.y},${p.z || 0}`).join(',');
+        setLastVector(vector);
+        setModalState('captured');
+        setFeedback('✋ Gesture captured! Show Open Palm (5 fingers) to save.');
+      }
     }
   }
 
   function startRecording() {
-    if (recording) return;
-    setRecording(true);
+    if (modalState === 'countdown' || modalState === 'saving') return;
+    setModalState('countdown');
     setLastVector(null);
-    setCountdown(3);
+    setFeedback('⏳ Hold your pose...');
     let c = 3;
+    setCountdown(c);
     const timer = setInterval(() => {
       c--;
       setCountdown(c);
-      if (c <= 0) {
-        clearInterval(timer);
-        setRecording(false);
-        // Capture happens in onHandResults
-        setFeedback('Gesture captured! Click Save to store it.');
-      }
+      if (c <= 0) { clearInterval(timer); }
     }, 1000);
   }
 
   async function saveGesture() {
-    if (!lastVector || saving) return;
-    setSaving(true);
+    if (!lastVector || modalState === 'saving') return;
+    setModalState('saving');
+    setFeedback('💾 Saving...');
     try {
       await apiClient.post('/api/gestures/upsert', {
-        userId,
-        slotNumber: selectedSlot,
+        userId, slotNumber: selectedSlot,
         gestureName: slots[selectedSlot - 1].gestureName,
         gestureVector: lastVector
       });
-      const newSlots = [...slots];
-      newSlots[selectedSlot - 1] = { ...newSlots[selectedSlot - 1], trained: true };
-      setSlots(newSlots);
-      setFeedback('✅ Gesture saved successfully!');
+      setSlots(prev => {
+        const n = [...prev];
+        n[selectedSlot - 1] = { ...n[selectedSlot - 1], trained: true };
+        return n;
+      });
+      setModalState('saved');
+      setFeedback(`✅ Gesture ${selectedSlot} saved! Show another finger to select a different slot.`);
     } catch (e) {
-      setFeedback('❌ Failed to save gesture');
-    } finally {
-      setSaving(false);
+      setModalState('idle');
+      setFeedback('❌ Save failed. Try again.');
     }
   }
 
   async function deleteGesture(slotNumber: number) {
     try {
       await apiClient.delete(`/api/gestures/delete/${userId}/${slotNumber}`);
-      const newSlots = [...slots];
-      newSlots[slotNumber - 1] = { ...newSlots[slotNumber - 1], trained: false, gestureName: `Gesture ${slotNumber}`, gestureVector: undefined };
-      setSlots(newSlots);
+      setSlots(prev => {
+        const n = [...prev];
+        n[slotNumber - 1] = { ...n[slotNumber - 1], trained: false, gestureName: `Gesture ${slotNumber}`, gestureVector: undefined };
+        return n;
+      });
       setFeedback(`🗑️ Gesture ${slotNumber} deleted`);
+      setTimeout(() => setFeedback(null), 2000);
     } catch (e) {
-      setFeedback('❌ Failed to delete gesture');
+      setFeedback('❌ Delete failed');
     }
   }
 
   if (!visible) return null;
 
+  // Gesture guide based on current state
+  const gestureGuide = modalState === 'idle'
+    ? '👆 1-5 fingers = select slot  |  👍 = record  |  👎 = delete  |  ✊ = close'
+    : modalState === 'countdown'
+    ? '⏳ Hold your hand still...'
+    : modalState === 'captured'
+    ? '✋ Open Palm (5 fingers) = save  |  👎 = discard'
+    : modalState === 'saving'
+    ? '💾 Saving...'
+    : '✅ Done! Select another slot or ✊ to close';
+
   return (
     <div className="gt-modal-backdrop" onClick={onClose}>
       <div className="gt-modal" onClick={e => e.stopPropagation()}>
-        <button className="gt-close" onClick={onClose}>✕</button>
-        <h2 className="gt-title">🎯 Train My Gestures</h2>
-        <p className="gt-subtitle">Create up to 5 custom hand gestures for transaction approval</p>
+        <div className="gt-close-icon" onClick={onClose}>✕</div>
+        <h2 className="gt-title">🎯 Gesture Training</h2>
+        <p className="gt-subtitle">Use gestures to control everything — no clicking needed</p>
 
         <div className="gt-main">
           {/* Camera */}
@@ -240,57 +339,37 @@ export default function GestureTrainingModal({ userId, visible, onClose }: Gestu
               <canvas ref={canvasRef} className="gt-canvas" />
               {!cameraActive && <div className="gt-camera-off">Camera access required</div>}
             </div>
-            <button
-              className="gt-record-btn"
-              onClick={startRecording}
-              disabled={recording || !cameraActive}
-            >
-              {recording ? `⏳ ${countdown > 0 ? `${countdown}s` : 'Capturing...'}` : '🔴 Record'}
-            </button>
           </div>
 
-          {/* Slots */}
+          {/* Slots — show finger count as gesture hint */}
           <div className="gt-slots-section">
             <h3>Your Gesture Slots</h3>
             <div className="gt-slots-grid">
               {slots.map(slot => (
                 <div
                   key={slot.slotNumber}
-                  className={`gt-slot ${selectedSlot === slot.slotNumber ? 'active' : ''} ${slot.trained ? 'trained' : ''}`}
-                  onClick={() => setSelectedSlot(slot.slotNumber)}
+                  className={`gt-slot ${selectedSlot === slot.slotNumber ? 'active' : ''} ${slot.trained ? 'trained' : ''} ${modalState === 'idle' ? 'gesture-selectable' : ''}`}
                 >
                   <div className="gt-slot-number">{slot.slotNumber}</div>
-                  <div className="gt-slot-name">{slot.gestureName}</div>
-                  <div className="gt-slot-status">{slot.trained ? '✅ Trained' : '⬜ Empty'}</div>
-                  {slot.trained && (
-                    <button
-                      className="gt-slot-delete"
-                      onClick={e => { e.stopPropagation(); deleteGesture(slot.slotNumber); }}
-                      title="Delete gesture"
-                    >
-                      🗑️
-                    </button>
+                  <div className="gt-slot-info">
+                    <div className="gt-slot-name">{slot.gestureName}</div>
+                    <div className="gt-slot-status">
+                      {slot.trained ? '✅ Trained' : '⬜ Empty'}
+                      {selectedSlot === slot.slotNumber && modalState === 'captured' && lastVector && <span className="gt-just-captured"> ✋ Captured!</span>}
+                    </div>
+                  </div>
+                  {selectedSlot === slot.slotNumber && (
+                    <div className="gt-slot-indicator">👈</div>
                   )}
                 </div>
               ))}
             </div>
 
-            <div className="gt-actions">
-              <button
-                className="gt-save-btn"
-                onClick={saveGesture}
-                disabled={!lastVector || saving}
-              >
-                {saving ? '💾 Saving...' : '💾 Save Gesture'}
-              </button>
-            </div>
+            {/* Gesture hint bar */}
+            <div className="gt-gesture-hint">{gestureGuide}</div>
 
             {feedback && <div className="gt-feedback">{feedback}</div>}
           </div>
-        </div>
-
-        <div className="gt-instructions">
-          <strong>How to train:</strong> Select a slot → Show your hand to the camera → Click Record → Hold your pose for 3 seconds → Click Save
         </div>
       </div>
     </div>
