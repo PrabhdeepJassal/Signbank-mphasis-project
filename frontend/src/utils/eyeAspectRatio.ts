@@ -18,6 +18,7 @@ function eyeAspectRatio(points: FacePoint[], indexes: readonly number[]): number
   return vertical / horizontal;
 }
 
-export function getAverageEyeAspectRatio(points: FacePoint[]): number {
-  return (eyeAspectRatio(points, LEFT_EYE) + eyeAspectRatio(points, RIGHT_EYE)) / 2;
+/** Returns the MINIMUM (most-closed) eye's EAR — one eye closed = detected */
+export function getMinEyeAspectRatio(points: FacePoint[]): number {
+  return Math.min(eyeAspectRatio(points, LEFT_EYE), eyeAspectRatio(points, RIGHT_EYE));
 }

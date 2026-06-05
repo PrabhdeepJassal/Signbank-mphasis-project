@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { getAverageEyeAspectRatio } from '../utils/eyeAspectRatio';
+import { getMinEyeAspectRatio } from '../utils/eyeAspectRatio';
 
 export type GestureEvent =
   | { type: 'DIGIT'; value: string; hand?: number }
@@ -179,7 +179,7 @@ function ensureSecurityOverlay() {
       <div style="width:min(540px,calc(100vw - 32px));padding:32px;border:1px solid rgba(148,163,184,.25);background:rgba(15,23,42,.9);box-shadow:0 24px 80px rgba(0,0,0,.4)">
         <div style="font-size:40px;margin-bottom:12px">!</div>
         <h1 id="eye-lock-title" style="margin:0 0 8px;font-size:28px;letter-spacing:.02em">SECURITY WARNING</h1>
-        <p id="eye-lock-message" style="margin:0 0 18px;color:#cbd5e1;font-size:15px;line-height:1.5">Another person has been detected. Close both eyes for 2-3 seconds to confirm locking the app.</p>
+        <p id="eye-lock-message" style="margin:0 0 18px;color:#cbd5e1;font-size:15px;line-height:1.5">Another person has been detected. Look away or blink to confirm locking the app.</p>
         <div style="height:10px;background:rgba(148,163,184,.22);overflow:hidden">
           <div id="eye-lock-progress" style="height:100%;width:0%;background:#22c55e;transition:width .12s linear"></div>
         </div>
@@ -323,7 +323,7 @@ export function useGestureControl(
       resetEyeClosureConfirmation(faceCount);
       stopActiveGestureState();
       securityState = 'WARNING';
-      updateSecurityOverlay('WARNING', faceCount, 0, 'Another person has been detected. Close both eyes for 2-3 seconds to lock the app.');
+      updateSecurityOverlay('WARNING', faceCount, 0, 'Another person has been detected. Look away or blink to lock the app.');
     }
 
     function transitionToLocked(faceCount: number) {
@@ -344,14 +344,14 @@ export function useGestureControl(
     function updateWarningEyeClosure(faces: any[][], faceCount: number, now: number) {
       if (warningFaceCount !== faceCount) {
         resetEyeClosureConfirmation(faceCount);
-        updateSecurityOverlay('WARNING', faceCount, 0, 'Face count changed. Close both eyes again for 2-3 seconds to confirm locking.');
+        updateSecurityOverlay('WARNING', faceCount, 0, 'Face count changed. Look away and try again.');
         return;
       }
 
-      const closedIndex = faces.findIndex((points: any[]) => getAverageEyeAspectRatio(points) < EYE_CLOSED_EAR_THRESHOLD);
+      const closedIndex = faces.findIndex((points: any[]) => getMinEyeAspectRatio(points) < EYE_CLOSED_EAR_THRESHOLD);
       if (closedIndex < 0) {
         resetEyeClosureConfirmation(faceCount);
-        updateSecurityOverlay('WARNING', faceCount, 0, 'Blink ignored. Close both eyes continuously to confirm locking.');
+        updateSecurityOverlay('WARNING', faceCount, 0, 'Lock not confirmed. Hold your eye closed to lock.');
         return;
       }
 
