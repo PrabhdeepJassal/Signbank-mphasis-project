@@ -68,34 +68,28 @@ function calcConfidence(buffer: string[], current: string): number {
 
 
 function drawSlider(ctx: CanvasRenderingContext2D, normX: number, _wristYpx: number, W: number, H: number, _rawX: number, _smoothX: number) {
-  const PAD = 50, left = PAD, right = W - PAD, trackY = H - 60, thumbX = left + normX * (right - left);
-  ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 12; ctx.lineCap = 'round';
-  ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 8; ctx.beginPath(); ctx.moveTo(left, trackY); ctx.lineTo(right, trackY); ctx.stroke();
-  ctx.globalAlpha = 1; ctx.shadowColor = 'rgba(245,158,11,.6)'; ctx.shadowBlur = 18;
+  const PAD = 30, left = PAD, right = W - PAD, trackY = H - 40, thumbX = left + normX * (right - left);
+  ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(left, trackY); ctx.lineTo(right, trackY); ctx.stroke();
   const grad = ctx.createLinearGradient(left, 0, right, 0); grad.addColorStop(0, '#f59e0b'); grad.addColorStop(1, '#f43f5e');
-  ctx.strokeStyle = grad; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(left, trackY); ctx.lineTo(thumbX, trackY); ctx.stroke();
-  ctx.globalAlpha = .7; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-  const tick = (x: number) => { ctx.beginPath(); ctx.moveTo(x, trackY - 12); ctx.lineTo(x, trackY + 12); ctx.stroke(); };
+  ctx.strokeStyle = grad; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(left, trackY); ctx.lineTo(thumbX, trackY); ctx.stroke();
+  ctx.globalAlpha = .5; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  const tick = (x: number) => { ctx.beginPath(); ctx.moveTo(x, trackY - 8); ctx.lineTo(x, trackY + 8); ctx.stroke(); };
   tick(left); tick(right);
-  ctx.globalAlpha = 1; ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 32; ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(thumbX, trackY, 20, 0, Math.PI * 2); ctx.fill();
-  ctx.shadowBlur = 0; const ig = ctx.createRadialGradient(thumbX, trackY, 0, thumbX, trackY, 15);
-  ig.addColorStop(0, '#f59e0b'); ig.addColorStop(1, '#f43f5e');
-  ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(thumbX, trackY, 12, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = .95; ctx.fillStyle = '#fff'; ctx.font = 'bold 12px system-ui'; ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 5;
-  ctx.textAlign = 'left'; ctx.fillText('₹500', left, trackY - 30); ctx.textAlign = 'right'; ctx.fillText('₹1,00,000', right, trackY - 30);
-  ctx.textAlign = 'center'; ctx.font = 'bold 13px system-ui'; ctx.shadowBlur = 10; ctx.fillText('🤘 slide hand left/right', W / 2, trackY - 52);
+  ctx.globalAlpha = .9; ctx.fillStyle = '#f59e0b';
+  ctx.beginPath(); ctx.arc(thumbX, trackY, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = .7; ctx.fillStyle = '#fff'; ctx.font = 'bold 9px system-ui';
+  ctx.textAlign = 'left'; ctx.fillText('₹500', left, trackY - 20); ctx.textAlign = 'right'; ctx.fillText('₹1,00,000', right, trackY - 20);
   ctx.restore();
 }
 
 function drawHoldRing(ctx: CanvasRenderingContext2D, cx: number, cy: number, pct: number) {
-  ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.arc(cx, cy, 32, 0, Math.PI * 2); ctx.stroke();
-  ctx.globalAlpha = 1; ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 6; ctx.lineCap = 'round';
-  ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 16;
-  ctx.beginPath(); ctx.arc(cx, cy, 32, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 12px system-ui'; ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 6; ctx.textAlign = 'center';
-  ctx.fillText('Hold 🤘', cx, cy - 42); ctx.restore();
+  ctx.save(); ctx.globalAlpha = .3; ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(cx, cy, 24, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = .8; ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(cx, cy, 24, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('Hold 🤘', cx, cy - 32); ctx.restore();
 }
 
 // drawScrollButtons removed as requested
@@ -124,25 +118,22 @@ function drawThreeFingerScrollIndicator(
   ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
   ctx.fillRect(0, (H / 2) - 60, 640, 120);
 
-  // 3. Draw active glowing particle circle at pinch center
+  // 3. Draw active glowing particle circle at pinch center (no shadow blur — saves GPU)
   const color = isUpper ? '#38bdf8' : '#ef4444';
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = color;
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(px, py, 12, 0, Math.PI * 2);
+  ctx.arc(px, py, 8, 0, Math.PI * 2);
   ctx.fill();
   
   // Draw rotating outer radar ring
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(px, py, 20, 0, Math.PI * 2);
+  ctx.arc(px, py, 14, 0, Math.PI * 2);
   ctx.stroke();
   
   // 4. Draw dynamic motion vectors and direction HUD text
-  ctx.shadowBlur = 10;
-  ctx.font = 'bold 22px system-ui';
+  ctx.font = 'bold 14px system-ui';
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -165,12 +156,10 @@ function drawThreeFingerScrollIndicator(
 function drawConfidenceOverlay(ctx: CanvasRenderingContext2D, gesture: string, confidence: number, _W: number, H: number, hand: number) {
   if (!gesture || gesture === 'Unknown') return;
   ctx.save(); const label = `${hand === 0 ? '✋' : '🤚'} H${hand + 1}: ${RAW_TO_EMOJI[gesture] ?? gesture} ${confidence}%`;
-  const boxW = 220, boxH = 30, bx = 10, by = hand === 0 ? 10 : H - boxH - 10;
-  ctx.globalAlpha = .75; ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, 8); ctx.fill();
-  ctx.globalAlpha = 1; const barColor = confidence >= 80 ? '#34d399' : confidence >= 60 ? '#f59e0b' : '#f87171';
-  ctx.fillStyle = barColor; ctx.beginPath(); ctx.roundRect(bx + 3, by + boxH - 6, (boxW - 6) * (confidence / 100), 3, 2); ctx.fill();
-  ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'left'; ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 4;
-  ctx.fillText(label, bx + 6, by + 14); ctx.restore();
+  const boxW = 160, boxH = 22, bx = 6, by = hand === 0 ? 6 : H - boxH - 6;
+  ctx.globalAlpha = .7; ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, 6); ctx.fill();
+  ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText(label, bx + 5, by + 14); ctx.restore();
 }
 
 function ensureSecurityOverlay() {
@@ -475,7 +464,7 @@ export function useGestureControl(
       try {
         // Start camera and wait for MediaPipe Hands CDN script in parallel
         const [camStream] = await Promise.all([
-          navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }),
+          navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } }),
           new Promise<void>(res => { const poll = () => (typeof Hands !== 'undefined' ? res() : setTimeout(poll, 100)); poll(); }),
         ]);
         if (cancelled) { camStream.getTracks().forEach(t => t.stop()); return; }
@@ -485,7 +474,7 @@ export function useGestureControl(
         await new Promise<void>(res => { const poll = () => (video.videoWidth > 0 ? res() : setTimeout(poll, 80)); poll(); });
         if (cancelled) return;
 
-        handsInst = new Hands({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+        handsInst = new Hands({ locateFile: (f: string) => `/mediapipe/${f}` });
         handsInst.setOptions({
           maxNumHands: 2,
           modelComplexity: 0,
@@ -493,17 +482,19 @@ export function useGestureControl(
           minTrackingConfidence: 0.7,
         });
 
-        // Lazy Face Mesh init — provides face landmark detection for eye-blink anti-peek
+        // Very lazy Face Mesh init — delay 5s so camera + hands start first (low-end friendly)
+        setTimeout(() => {
         const initFaceMesh = async () => {
-          while (typeof FaceMesh === 'undefined') await new Promise(r => setTimeout(r, 200));
+          while (typeof FaceMesh === 'undefined') await new Promise(r => setTimeout(r, 500));
           if (cancelled) return;
-          const inst = new FaceMesh({ locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
-          inst.setOptions({ maxNumFaces: 4, refineLandmarks: true, minDetectionConfidence: 0.65, minTrackingConfidence: 0.65 });
+          const inst = new FaceMesh({ locateFile: (f: string) => `/mediapipe/${f}` });
+          inst.setOptions({ maxNumFaces: 2, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
           inst.onResults(handleFaceMeshResults);
           faceMeshInst = inst;
           faceMeshReady = true;
         };
         initFaceMesh();
+        }, 5000);
 
         handsInst.onResults((results: any) => {
           if (cancelled) return;
@@ -739,9 +730,8 @@ export function useGestureControl(
                     bothThumbsDownBuffer = [];
                   }
                   const bothEmoji = RAW_TO_EMOJI['THUMB_DOWN'] ?? '👎';
-                  ctx.font = 'bold 48px serif'; ctx.fillStyle = '#ef4444';
-                  ctx.shadowColor = 'rgba(239,68,68,.6)'; ctx.shadowBlur = 16;
-                  ctx.fillText(bothEmoji + bothEmoji, W / 2 - 30, H / 2);
+                  ctx.font = 'bold 28px serif'; ctx.fillStyle = '#ef4444';
+                  ctx.fillText(bothEmoji + bothEmoji, W / 2 - 18, H / 2);
                   ctx.restore(); return;
                 }
               }
@@ -758,9 +748,8 @@ export function useGestureControl(
                 }
                 // Skip individual hand processing entirely while both-hands confirmed
                 const bothEmoji = RAW_TO_EMOJI['THUMB_DOWN'] ?? '👎';
-                ctx.font = 'bold 48px serif'; ctx.fillStyle = '#ef4444';
-                ctx.shadowColor = 'rgba(239,68,68,.6)'; ctx.shadowBlur = 16;
-                ctx.fillText(bothEmoji + bothEmoji, W / 2 - 30, H / 2);
+                ctx.font = 'bold 28px serif'; ctx.fillStyle = '#ef4444';
+                ctx.fillText(bothEmoji + bothEmoji, W / 2 - 18, H / 2);
                 ctx.restore(); return;
               }
 
@@ -772,10 +761,8 @@ export function useGestureControl(
               for (const hp of handsToProcess) {
                 const emoji = RAW_TO_EMOJI[hp.raw];
                 if (emoji && hp.raw !== 'Unknown') {
-                  ctx.font = 'bold 36px serif'; ctx.fillStyle = '#fff';
-                  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 8;
-                  ctx.fillText(emoji, hp.idx === 0 ? 12 : W - 52, hp.idx === 0 ? 52 : H - 14);
-                  ctx.shadowBlur = 0;
+                  ctx.font = 'bold 20px serif'; ctx.fillStyle = '#fff';
+                  ctx.fillText(emoji, hp.idx === 0 ? 6 : W - 30, hp.idx === 0 ? 28 : H - 8);
                 }
 
                 hp.buf.push(hp.raw);
@@ -808,11 +795,11 @@ export function useGestureControl(
           const v = videoRef.current;
           if (v && !v.paused && v.readyState >= 2) {
             frameSkip++;
-            // Throttle MediaPipe to every 2nd frame (~30fps) — full 60fps ML inference is wasteful
-            if (frameSkip % 2 === 0) {
+            // Throttle MediaPipe to every 3rd frame (~10fps on 30fps cam) — saves CPU on low-end
+            if (frameSkip % 3 === 0) {
               try { await handsInst.send({ image: v }); } catch (_) { }
               faceFrameSkip++;
-              if (faceFrameSkip % 5 === 0 && faceMeshReady && faceMeshInst) {
+              if (faceFrameSkip % 10 === 0 && faceMeshReady && faceMeshInst) {
                 try { faceMeshInst.send({ image: v }); } catch (_) { }
               }
             }
