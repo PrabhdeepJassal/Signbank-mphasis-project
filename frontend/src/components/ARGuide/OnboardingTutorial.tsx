@@ -9,8 +9,6 @@ export const ONBOARDING_STEPS: ARStep[] = [
   { id: 'three', gesture: '3', label: 'Three Fingers 🤌', instruction: 'Raise index + middle + ring', ghostEmoji: '🤌' },
   { id: 'four', gesture: '4', label: 'Four Fingers 🤘', instruction: 'Raise 4 fingers, tuck pinky', ghostEmoji: '🤘' },
   { id: 'palm', gesture: 'OPEN_PALM', label: 'Open Palm 🖐️', instruction: 'Show all 5 fingers — open hand', ghostEmoji: '🖐️' },
-  { id: 'thumbs-up', gesture: 'THUMB_UP', label: 'Thumbs Up 👍', instruction: 'Thumb up, all other fingers curled', ghostEmoji: '👍' },
-  { id: 'thumbs-down', gesture: 'THUMB_DOWN', label: 'Thumbs Down 👎', instruction: 'Thumb down, all other fingers curled', ghostEmoji: '👎' },
   { id: 'rock', gesture: 'ROCK', label: 'Rock Sign 🤘', instruction: 'Index + pinky up, middle + ring down', ghostEmoji: '🤘' },
   { id: 'six', gesture: '6', label: '6 Fingers 🖐️☝️', instruction: 'Open palm + 1 finger on other hand', ghostEmoji: '🖐️☝️' },
   { id: 'seven', gesture: '7', label: '7 Fingers 🖐️✌️', instruction: 'Open palm + 2 fingers on other hand', ghostEmoji: '🖐️✌️' },
@@ -145,7 +143,7 @@ const OnboardingTutorial = forwardRef<OnboardingHandle, Props>(
 
           <div className="onboarding-footer glass">
             <p className="onboarding-footer-hint">
-              Show the gesture to the camera. Use <strong>👍 Thumbs Up</strong> to confirm if stuck.
+              Show the gesture to the camera. The system will <strong>auto-detect</strong> when you match the pose.
             </p>
             <div className="onboarding-footer-actions">
               <button className="onboarding-skip-btn" onClick={guide.skip}>

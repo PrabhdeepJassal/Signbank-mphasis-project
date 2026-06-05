@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import PortalLayout from '../../components/Layout/PortalLayout';
 
 import GestureCamera from '../../components/GestureCamera/GestureCamera';
+import GestureTrainingModal from '../../components/GestureTrainingModal';
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,7 +33,7 @@ const FALLBACK_COMMANDS: Command[] = [
 
   {
 
-    commandId: 'C004',
+    commandId: 'C009',
 
     commandName: 'Check Cards',
 
@@ -42,13 +43,27 @@ const FALLBACK_COMMANDS: Command[] = [
 
   },
 
+  {
+
+    commandId: 'C010',
+
+    commandName: 'Gesture Training',
+
+    commandDescription: 'Practice and master hand gestures',
+
+    page: { pageId: 'P001', pageName: 'Operator Dashboard' }
+
+  },
+
 ];
- 
+
 const FALLBACK_MAPPINGS: CommandMapping[] = [
 
   { mapId: 'M001', commandId: 'C001', roleId: 'R001', gestureId: 'G002', userId: null, isActive: true },
 
-  { mapId: 'M004', commandId: 'C004', roleId: 'R001', gestureId: 'G003', userId: null, isActive: true },
+  { mapId: 'M009', commandId: 'C009', roleId: 'R001', gestureId: 'G003', userId: null, isActive: true },
+
+  { mapId: 'M010', commandId: 'C010', roleId: 'R001', gestureId: 'G004', userId: null, isActive: true },
 
 ];
  
@@ -83,6 +98,7 @@ export default function OperatorDashboard() {
   const [exiting, setExiting] = useState(false);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showTrainingModal, setShowTrainingModal] = useState(false);
 
   
   const userId = currentUser?.username ?? 'User';
@@ -114,11 +130,20 @@ export default function OperatorDashboard() {
 
       apiClient.get<Command[]>('/api/admin/commands')
 
-        .then(r => setCommands(r.data)),
+        .then(r => {
+          // Merge API commands with fallback to preserve local-only entries (e.g. Gesture Training)
+          const apiIds = new Set(r.data.map((c: Command) => c.commandId));
+          const merged = [...r.data, ...FALLBACK_COMMANDS.filter(fc => !apiIds.has(fc.commandId))];
+          setCommands(merged);
+        }),
  
       apiClient.get<CommandMapping[]>('/api/admin/mappings')
 
-        .then(r => setMappings(r.data)),
+        .then(r => {
+          const apiIds = new Set(r.data.map((m: CommandMapping) => m.mapId));
+          const merged = [...r.data, ...FALLBACK_MAPPINGS.filter(fm => !apiIds.has(fm.mapId))];
+          setMappings(merged);
+        }),
  
       apiClient.get<Gesture[]>('/api/admin/gestures')
 
@@ -154,6 +179,12 @@ export default function OperatorDashboard() {
 
     }
 
+    if (commandName === 'Gesture Training') {
+
+      return gestures.find(g => g.gestureId === 'G004') ?? null;
+
+    }
+
     const m = mappings.find(
 
       m =>
@@ -183,6 +214,12 @@ export default function OperatorDashboard() {
     if (commandName === 'Check Cards') {
 
       navigate('/operator/cards');
+
+    }
+
+    if (commandName === 'Gesture Training') {
+
+      setShowTrainingModal(true);
 
     }
 
@@ -228,7 +265,18 @@ export default function OperatorDashboard() {
 
     }
 
+    if (evt.type === 'BOTH_THUMBS_DOWN') {
+      navigate('/');
+      return;
+    }
+
     if (evt.type !== 'GESTURE_ID') return;
+
+    // Pass to training modal if open
+    if (showTrainingModal) {
+      window.dispatchEvent(new CustomEvent('training-gesture', { detail: evt }));
+      return;
+    }
 
     switch (evt.id) {
 
@@ -237,16 +285,18 @@ export default function OperatorDashboard() {
         navigate('/operator/balance');
 
         break;
- 
+
       case 'G003':
-
         navigate('/operator/cards');
+        break;
 
+      case 'G004':
+        setShowTrainingModal(true);
         break;
 
     }
 
-  }, [showLogoutConfirm, doLogout, navigate]);
+  }, [showLogoutConfirm, doLogout, navigate, showTrainingModal]);
  
   const cardAccents = ['#059669', '#7c3aed', '#2563eb', '#d97706'];
 
@@ -454,13 +504,18 @@ export default function OperatorDashboard() {
   
         </div>
   
-        {!showLogoutConfirm && (
+        {!showLogoutConfirm && !showTrainingModal && (
 <GestureCamera onGesture={handleGesture} />
 
         )}
   
       </div>
-  
+
+      <GestureTrainingModal
+        visible={showTrainingModal}
+        onClose={() => setShowTrainingModal(false)}
+      />
+
     </PortalLayout>
 
   );

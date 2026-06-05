@@ -1,0 +1,120 @@
+.sos-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(180, 0, 0, 0.92);
+  backdrop-filter: blur(12px);
+  animation: sosFadeIn 0.3s ease;
+}
+
+.sos-safe {
+  background: rgba(0, 120, 0, 0.85);
+}
+
+.sos-content {
+  text-align: center;
+  max-width: 480px;
+  padding: 2rem;
+}
+
+.sos-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.sos-pulse {
+  animation: sosPulse 1s ease-in-out infinite;
+}
+
+.sos-content h1 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 4px;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+
+.sos-content h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.sos-desc {
+  color: rgba(255,255,255,0.8);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.sos-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 1.5rem;
+}
+
+.sos-countdown {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.sos-timer span {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.85rem;
+}
+
+.sos-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sos-btn {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.sos-btn-danger {
+  background: #fff;
+  color: #c00;
+}
+
+.sos-btn-danger:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.sos-btn-safe {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.sos-btn-safe:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+@keyframes sosFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sosPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
